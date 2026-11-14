@@ -2,54 +2,52 @@
 """Which firmwares a CI run builds: those whose pin differs from the published index's (a new Hub entry, a new
 version, a new pin), plus any named; as a JSON list on stdout (a GitHub Actions matrix).
 
-    python3 plan.py [--index URL_OR_FILE] [--all] [id ...]
+    python3 plan.py [--index FILE] [--all] [id ...]
 
-The published index is read from --index (default: the live one); none (the first run) means everything.
+The published index is read from --index (the workflow passes the gh-pages branch's copy); none (the first run)
+means everything. Named ids that aren't pinned firmwares are dropped (so a dispatch input can't name anything else).
 `overrides.json` (beside this file) can hold {"skip": {id: reason}}: firmwares not to build (for example a
 licence question), listed in the report rather than built.
 """
 import argparse
 import json
+import re
 import sys
-import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-INDEX_URL = "https://genericjam.github.io/fmutate-cartridges/index.json"
+SAFE = re.compile(r"[a-z0-9][a-z0-9_.-]{0,63}")      # (ids go into job names and paths; the Hub's catalogue is input)
+REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+SHA = re.compile(r"[0-9a-f]{40}")
 
 
 def published(src):
-    try:
-        if src.startswith("http"):
-            req = urllib.request.Request(src, headers={"User-Agent": "fmutate-cartridges"})
-            return json.loads(urllib.request.urlopen(req, timeout=60).read())
+    if src and Path(src).is_file():
         return json.loads(Path(src).read_text())
-    except Exception as e:                          # (no index yet: build everything)
-        print(f"plan: no published index ({e}); building all", file=sys.stderr)
-        return {"firmwares": []}
+    print("plan: no published index; building all", file=sys.stderr)
+    return {"firmwares": []}
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--index", default=INDEX_URL)
+    ap.add_argument("--index")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("ids", nargs="*")
     a = ap.parse_args()
-    pins = json.loads((HERE / "pins.json").read_text())
+    pins = {k: p for k, p in json.loads((HERE / "pins.json").read_text()).items()
+            if SAFE.fullmatch(k) and REPO.fullmatch(p.get("repo") or "") and SHA.fullmatch(p.get("commit") or "")}
     ov = json.loads((HERE / "overrides.json").read_text()) if (HERE / "overrides.json").exists() else {}
     skip = ov.get("skip", {})
     if a.ids:
-        todo = [i for i in a.ids if i in pins]
+        todo = [i for i in dict.fromkeys(a.ids) if i in pins]
     elif a.all:
         todo = list(pins)
     else:
-        idx = {f["id"]: f for f in published(a.index).get("firmwares", [])}
-        tried = {f["id"]: f for f in published(a.index).get("tried", [])}
-        todo = []
-        for fid, p in pins.items():
-            old = idx.get(fid) or tried.get(fid)
-            if not old or old.get("commit") != p["commit"] or old.get("version") != p["version"]:
-                todo.append(fid)
+        idx = published(a.index)
+        known = {f["id"]: f for f in idx.get("tried", []) + idx.get("firmwares", [])}
+        todo = [fid for fid, p in pins.items()
+                if (known.get(fid) or {}).get("commit") != p["commit"]
+                or (known.get(fid) or {}).get("version") != p["version"]]
     print(json.dumps([i for i in todo if i not in skip]))
 
 

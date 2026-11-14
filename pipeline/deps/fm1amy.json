@@ -1,0 +1,3 @@
+{"deps": [
+  {"repo": "shorepine/amy", "commit": "3f0025118a3f4bb6bab8019d15f7197accff8d92", "path": "amy", "why": "the AMY checkout (AMY_DIR) that tools/build.py, host/build_host_amy.sh and web/emu/build_amy.sh compile in place of X0X's engines; the repository doesn't hold it. README.md's Building: 'Release 0.1.0 is built and tested with AMY's main at commit 3f002511 (1.2.209 and four commits)', unmodified (it has shorepine/amy#1250's AMY_ONLY_PATCH the scripts require)"}
+]}

@@ -27,7 +27,7 @@ PINS = json.loads((HERE / "pins.json").read_text())
 def first_error(log):
     for line in log.splitlines():
         if re.search(r"error:|Undefined symbols|not found|No such file|failed", line):
-            return re.sub(r"/\S*/(?:work|work)/(src|obj/\w+)/", "", line).strip()[:160]
+            return re.sub(r"/\S*/work/(src|obj/\w+)/", "", line).strip()[:160]
     return ""
 
 

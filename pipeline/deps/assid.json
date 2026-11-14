@@ -1,0 +1,3 @@
+{"deps": [
+  {"repo": "charlesvestal/fm1-base", "commit": "d83b64d6325da616e789ba8cf759493f68128c9f", "path": "terceros/fm1-base", "why": "atek303/base is a symlink to ../terceros/fm1-base, which build.sh clones unpinned (charlesvestal/fm1-base main) when it is missing; this is fm1-base's main at the v1.0 release (2026-11-11 01:08 UTC), with its felucca-bsp submodule"}
+]}

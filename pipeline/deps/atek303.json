@@ -1,0 +1,3 @@
+{"deps": [
+  {"repo": "charlesvestal/fm1-base", "commit": "b69ec415910df328bf8717c1a0e5d6099e1c9a5e", "path": "terceros/fm1-base", "why": "atek303/base is a symlink to ../terceros/fm1-base, which herramientas/clonar-terceros.sh clones unpinned (charlesvestal/fm1-base, --depth 1 --recursive); this is fm1-base's main at the atek303-v1.2 release (2026-11-08 16:43 UTC), with its felucca-bsp submodule"}
+]}
