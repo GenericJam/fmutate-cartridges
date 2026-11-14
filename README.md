@@ -97,3 +97,5 @@ The pipeline itself (everything in this repository) is GPL-3.0, as FMutate (`LIC
   author as much as installing their firmware on an FM-1 does. The parity gate checks behaviour, not intent.
 
 History: moved from FMutate's `tools/native_catalog` (GenericJam/fmutate 277ad0c, history kept).
+
+Related: try FM-1 firmwares in the browser with the free community [FM-1 Emulator](https://fm1-emulator.atst.tools/).
