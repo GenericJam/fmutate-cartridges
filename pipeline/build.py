@@ -17,10 +17,12 @@ Mach-O). A firmware needing more than that is a per-firmware patch (pipeline/pat
 import argparse
 import importlib
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import deps  # noqa: E402
 from common import CAT, HERE, SRC, sh  # noqa: E402
 
 RECIPES = {}
@@ -49,6 +51,7 @@ def build(fid, target):
     if not d.is_dir():
         res["stage"] = "fetch"
         return res, log
+    os.environ.update(deps.env(fid, d))                # (a dependency's directory as the firmware's build reads it)
     r = recipe(d, fid)
     res["recipe"] = r
     if not r["recipe"]:

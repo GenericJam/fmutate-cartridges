@@ -1,6 +1,6 @@
 __pycache__/
-/work/
-/engine/
-/dist/
-/fmutate/
+/work
+/engine
+/dist
+/fmutate
 *.pem

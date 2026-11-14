@@ -12,7 +12,9 @@ pipeline/deps/<id>.json: {"deps": [DEP, ...]}, each DEP one of
       that GitHub repository at that commit (one shallow fetch, submodules too, .git removed) at <tree>/<path>,
       replacing what is there (a dangling symlink, an empty submodule directory). Optional "apply": patch files
       (paths relative to <tree>), applied in order inside <path> with `git apply` (a firmware that ships as patches
-      over another project's tree, as Kitten Synths over SLOOP).
+      over another project's tree, as Kitten Synths over SLOOP). Optional "env": a variable name the build sets to
+      <tree>/<path> (a firmware's build that takes the dependency's directory from its environment: fm1-amy's
+      AMY_DIR).
   {"catalog": "<id>", "why": "..."}
       another Hub firmware, fetched at its own pin into the work dir's src/ (recipes read it there).
 Commits are full SHA-1s and paths stay inside the tree, so a deps file can't name a moving branch or write outside.
@@ -30,6 +32,7 @@ HERE = Path(__file__).resolve().parent
 DEPS = HERE / "deps"
 SHA = re.compile(r"[0-9a-f]{40}")
 REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+ENV = re.compile(r"[A-Z_][A-Z0-9_]*")
 
 
 def load(fid):
@@ -54,8 +57,15 @@ def validate(fid, deps):
         if not REPO.fullmatch(d.get("repo", "")) or not SHA.fullmatch(d.get("commit", "")):
             raise SystemExit(f"deps/{fid}.json: {d} needs repo owner/name and a full 40-hex commit")
         inside(Path("/t"), d.get("path"))
+        if "env" in d and not ENV.fullmatch(d["env"]):
+            raise SystemExit(f"deps/{fid}.json: env {d['env']!r} is not a variable name")
         for a in d.get("apply", []):
             inside(Path("/t"), a)
+
+
+def env(fid, tree):
+    """the variables the build sets for the deps that name one ("env": the dependency's directory)"""
+    return {d["env"]: str(inside(Path(tree).resolve(), d["path"])) for d in load(fid) if "env" in d}
 
 
 def git(*args, cwd):
