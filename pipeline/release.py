@@ -6,8 +6,8 @@
 DIST/assets/<tag>/ holds one release's files (publish.py splits a run's assets over releases: GitHub keeps at most
 1000 assets in one). Each release is created if missing; files it doesn't hold yet (by name, size and SHA-256) are
 uploaded, a few rounds, waiting out the token's rate limit when it runs out (a run that rebuilds everything uploads
-hundreds). Then every asset of these releases that the index names must be in its release with the index's size and
-SHA-256, or this exits non-zero and the index isn't published. Needs `gh` with GH_TOKEN (contents: write).
+hundreds). Then every asset the index names (earlier runs' releases too) must be in its release with the index's size
+and SHA-256, or this exits non-zero and the index isn't published. Needs `gh` with GH_TOKEN (contents: write).
 """
 import argparse
 import hashlib
@@ -89,25 +89,26 @@ def main():
     ap.add_argument("--extra", action="append", default=[], help="a file every release also carries (pins.json)")
     a = ap.parse_args()
     dirs = sorted(d for d in Path(a.assets).iterdir() if d.is_dir()) if Path(a.assets).is_dir() else []
-    if not dirs:
-        print("release: no new assets")
-        return
     for d in dirs:
         upload(a.repo, d.name, sorted(d.iterdir()) + [Path(x) for x in a.extra], a.notes)
     index = json.loads(Path(a.index).read_text())
-    have = {d.name: held(a.repo, d.name) for d in dirs}
+    have = {}
     missing = []
-    for f in index["firmwares"]:
-        for platform, asset in f["assets"].items():
-            tag, name = asset["url"].split("/releases/download/", 1)[1].split("/", 1)
+    for f in index["firmwares"]:                # (earlier runs' releases too: the index must not name a lost file)
+        for asset in f["assets"].values():
+            tag, name = asset["url"].split(f"/{a.repo}/releases/download/", 1)[1].split("/", 1)
             if tag not in have:
-                continue                        # (an earlier run's release, checked when that run published)
+                try:
+                    have[tag] = held(a.repo, tag)
+                except subprocess.CalledProcessError:
+                    have[tag] = {}
             got = have[tag].get(name)
             if not got or got[0] != asset["size"] or got[1] not in (None, asset["sha256"]):
                 missing.append(f"{tag}/{name}")
     if missing:
         raise SystemExit(f"release: {len(missing)} assets the index names aren't in their release: {missing[:10]}")
-    print(f"release: {sum(len(h) for h in have.values())} assets in {len(have)} release(s), all the index names")
+    print(f"release: {len(dirs)} release(s) this run; all {sum(len(f['assets']) for f in index['firmwares'])} assets "
+          f"the index names are in their {len(have)} release(s)")
 
 
 if __name__ == "__main__":
