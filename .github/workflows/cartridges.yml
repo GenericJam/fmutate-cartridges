@@ -46,7 +46,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - name: Published index (gh-pages)
-        # (a missing branch means the first run; a failed fetch must fail, not plan everything as new)
+        # (a missing branch means the first run; a failed fetch must fail, not plan everything as new. The index keeps
+        # pins for unchanged versions, so it must verify as publish.py's --prev does.)
         run: |
           mkdir -p prev
           rc=0; git ls-remote --exit-code --heads origin gh-pages >/dev/null || rc=$?
@@ -54,6 +55,9 @@ jobs:
             git fetch -q --depth 1 origin gh-pages
             git show FETCH_HEAD:index.json > prev/index.json
             git show FETCH_HEAD:index.json.sig > prev/index.json.sig
+            base64 -d prev/index.json.sig > "$RUNNER_TEMP/index.sig.bin"
+            openssl pkeyutl -verify -pubin -inkey pipeline/signing.pub.pem -rawin -in prev/index.json \
+              -sigfile "$RUNNER_TEMP/index.sig.bin"
           elif [ "$rc" = 2 ]; then
             echo "no gh-pages yet: the first run"
           else
@@ -62,7 +66,7 @@ jobs:
       - name: Pins from the Hub's catalogue
         run: |
           for _ in 1 2 3; do curl -fsSL -A fmutate-cartridges -o catalog.json https://thefirmwarehub.com/catalog.json && break; sleep 15; done
-          python3 pipeline/pins.py catalog.json
+          python3 pipeline/pins.py catalog.json --index prev/index.json
           python3 pipeline/deps.py --check
       - id: plan
         env:

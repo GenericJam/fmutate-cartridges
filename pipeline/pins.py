@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Pin every FM-1 Firmware Hub firmware to a source commit.
 
-    python3 pipeline/pins.py [catalog.json]     -> pipeline/pins.json
+    python3 pipeline/pins.py [catalog.json] [--index INDEX]     -> pipeline/pins.json
 
 For each catalogue entry: the commit its package was built from, in this order of trust:
+  override    overrides.json {"pin": {id: {"version", "commit", "why"}}}: a person found the package's source commit
+              (for example in the firmware's own release record) where the catalogue names none; for that version only
   provenance  the Hub's verified build provenance (`provenance.commit`, a signed CI build of that commit)
   srcref      the Hub's own source reference
   tag         the entry's release tag (`tag`), resolved with `git ls-remote` (annotated tags dereferenced)
   head        the default branch's HEAD today: the entry names no tag, so the package's exact source is unknown
-An entry whose Hub version is unchanged keeps its pin (re-running doesn't move a HEAD pin); a new version
-resolves again. The catalogue defaults to https://thefirmwarehub.com/catalog.json.
+An entry whose Hub version is unchanged keeps its pin, from pins.json here or from --index (the published index,
+its signature already checked: what was built, published or tried), so re-running doesn't move a HEAD pin; a new
+version resolves again. The catalogue defaults to https://thefirmwarehub.com/catalog.json.
 """
+import argparse
 import json
+import re
 import subprocess
-import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
@@ -21,6 +25,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PINS = HERE / "pins.json"
+SHA = re.compile(r"[0-9a-f]{40}")
 HUB = "https://thefirmwarehub.com/catalog.json"
 
 
@@ -57,16 +62,33 @@ def resolve(fw):
 
 
 def main():
-    cat = load_catalog(sys.argv[1] if len(sys.argv) > 1 else None)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("catalog", nargs="?")
+    ap.add_argument("--index", help="the published index, whose pins are kept for unchanged versions")
+    a = ap.parse_args()
+    cat = load_catalog(a.catalog)
     old = json.loads(PINS.read_text()) if PINS.exists() else {}
+    idx = json.loads(Path(a.index).read_text()) if a.index and Path(a.index).is_file() else {}
+    kept = {}                                   # id: [earlier pins], pins.json's first
+    for fid, p in old.items():
+        kept.setdefault(fid, []).append(p)
+    for f in idx.get("firmwares", []) + idx.get("tried", []):
+        kept.setdefault(f["id"], []).append({**f, "how": f.get("pin"), "ref": "published index"})
+    ov_file = HERE / "overrides.json"
+    override = json.loads(ov_file.read_text()).get("pin", {}) if ov_file.exists() else {}
     todo = []
     pins = {}
     for fw in cat["firmwares"]:
         entry = {"name": fw.get("name") or fw["id"], "repo": fw["repo"], "version": str(fw.get("version")), "pkg": fw.get("pkg"),
                  "sha256": fw.get("sha256"), "lic": fw.get("lic"), "tag": fw.get("tag")}
-        prev = old.get(fw["id"])
-        if prev and prev["version"] == entry["version"] and prev["repo"] == entry["repo"] and prev.get("commit"):
-            pins[fw["id"]] = {**entry, **{k: prev[k] for k in ("commit", "how", "ref")}}
+        o = override.get(fw["id"])
+        if o and str(o.get("version")) == entry["version"] and SHA.fullmatch(o.get("commit") or ""):
+            pins[fw["id"]] = {**entry, "commit": o["commit"], "how": "override", "ref": "overrides.json"}
+            continue
+        prev = next((p for p in kept.get(fw["id"], []) if str(p.get("version")) == entry["version"]
+                     and p.get("repo") == entry["repo"] and SHA.fullmatch(p.get("commit") or "")), None)
+        if prev:
+            pins[fw["id"]] = {**entry, **{k: prev.get(k) for k in ("commit", "how", "ref")}}
         else:
             todo.append((fw, entry))
 

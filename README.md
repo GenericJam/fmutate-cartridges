@@ -27,10 +27,12 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
 
 `.github/workflows/cartridges.yml` (daily at 05:23 UTC, or `workflow_dispatch` with `ids` / `all`):
 
-1. **plan**: reads the Hub's `catalog.json`, pins every firmware to a commit (`pipeline/pins.py`: the Hub's build
-   provenance, else its source ref, else the release tag, else the default branch's HEAD on the day, flagged `head`),
-   and picks what is new or changed since the published index (`pipeline/plan.py`): a pin already published or already
-   tried is not built again. When nothing is new the run stops here, green, and the published index stays as it is.
+1. **plan**: reads the Hub's `catalog.json`, pins every firmware to a commit (`pipeline/pins.py`: a person's
+   `overrides.json` pin for that version, else the Hub's build provenance, else its source ref, else the release tag,
+   else the default branch's HEAD on the day, flagged `head`; a version already pinned, in `pins.json` or in the
+   published index, keeps its pin), and picks what is new or changed since the published index (`pipeline/plan.py`):
+   a pin already published or already tried is not built again. When nothing is new the run stops here, green, and
+   the published index stays as it is.
 2. **engine**: builds FMutate's native engine and emulator engine at a pinned FMutate commit (`pipeline/engine.sh`).
 3. **android** (one job per firmware, Linux; in batches of at most 150, `.github/workflows/_build-android.yml`, under
    GitHub's 256-job matrix limit): fetches the source at its pin (`pipeline/fetch.sh`, plus pinned
@@ -74,7 +76,9 @@ in this order of preference:
 4. **A per-firmware patch** (`pipeline/patches/<id>/*.patch`, applied with `patch -p1`): small, with a header saying
    why, only when the firmware's own source can't build on a computer.
 5. **`pipeline/overrides.json`**: `{"skip": {id: reason}}` not to build; `{"accept": {id: reason}}` to publish a
-   firmware that differs from the emulator for a reason a person checked (for example the emulator never boots it).
+   firmware that differs from the emulator for a reason a person checked (for example the emulator never boots it);
+   `{"pin": {id: {"version", "commit", "why"}}}`: the commit a version's package was built from, found by a person
+   where the catalogue names none (a HEAD pin builds whatever the default branch holds).
 
 `pipeline/causes/<id>.txt` holds one line per firmware that still can't be built, with what it would take.
 
