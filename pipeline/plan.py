@@ -44,10 +44,10 @@ def main():
         todo = list(pins)
     else:
         idx = published(a.index)
-        known = {f["id"]: f for f in idx.get("tried", []) + idx.get("firmwares", [])}
-        todo = [fid for fid, p in pins.items()
-                if (known.get(fid) or {}).get("commit") != p["commit"]
-                or (known.get(fid) or {}).get("version") != p["version"]]
+        # (built already: published, or tried and not published; a firmware can be both, an older version
+        # published and a newer one tried)
+        done = {(f["id"], f.get("commit"), f.get("version")) for f in idx.get("tried", []) + idx.get("firmwares", [])}
+        todo = [fid for fid, p in pins.items() if (fid, p["commit"], p["version"]) not in done]
     print(json.dumps([i for i in todo if i not in skip]))
 
 
