@@ -308,7 +308,7 @@ def build_dinghy(fid, r, target, shims, log):
     if sh([*common, f'-DFW_MAIN="{tree / r["app"]}"', "-c", str(HERE / "adapters/dinghy.c"), "-o", str(o)], ROOT,
           log=log):
         return None, "compile"
-    objs = [str(o)]
+    objs = [str(o), *r.get("objs", [])]                # (and what a recipe built on it brings: recipes/fm1dock.py's module)
     for i, x in enumerate(extras):                      # (opn1's opn2.c, psg.c ...; mvance's mv_dsp.c)
         xo = work / f"extra{i}.o"
         if sh([*common, "-c", str(x), "-o", str(xo)], ROOT, log=log):

@@ -33,7 +33,8 @@ def first_error(log):
 
 # the Dinghy line's native level is its USB audio (Q15 as the app renders it); the emulator plays its DAC, where the
 # firmware puts Q15 at -6 dBFS (platform.c: `o[i] <<= 7` into the 24-bit word). The browser builds play the DAC's.
-LEVEL_OFFSET_DB = {"dinghy": 6.0}
+# fm1-dock (recipe fm1dock) is a Dinghy fork with the same platform.c.
+LEVEL_OFFSET_DB = {"dinghy": 6.0, "fm1dock": 6.0}
 
 
 def verdict(v, recipe=None):

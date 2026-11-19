@@ -1,0 +1,16 @@
+firmware/fm1sid.c's find_pack (PACK_AFTER_IMAGE: the fm1-dock solo app's module, dock/solo/module.cfg) rounds
+the image's end up to 4 through a uint32_t, which keeps a 32-bit FM-1 address whole but cuts a 64-bit computer's
+pointer to its low half (the module crashed in init, reading the pack there); uintptr_t rounds it the same way
+on both.
+
+--- a/firmware/fm1sid.c
++++ b/firmware/fm1sid.c
+@@ -70,7 +70,7 @@
+ {
+     const uint8_t *p = _hb_rt_load + (_hb_rt_end - _hb_rt_start);   /* the image's end: the last load image's */
+     uint32_t i;
+-    p = (const uint8_t *)(((uint32_t)p + 3u) & ~3u);
++    p = (const uint8_t *)(((uintptr_t)p + 3u) & ~(uintptr_t)3u);
+     for (i = 0; i < 0x4000u; i += 4u)       /* (a little padding between: the slot's, the app's) */
+         if (!memcmp(p + i, "SIDPACK1", 8))
+             return p + i;

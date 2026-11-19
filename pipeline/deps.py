@@ -14,7 +14,7 @@ pipeline/deps/<id>.json: {"deps": [DEP, ...]}, each DEP one of
       (paths relative to <tree>), applied in order inside <path> with `git apply` (a firmware that ships as patches
       over another project's tree, as Kitten Synths over SLOOP). Optional "env": a variable name the build sets to
       <tree>/<path> (a firmware's build that takes the dependency's directory from its environment: fm1-amy's
-      AMY_DIR).
+      AMY_DIR), or with "env_file" to that file inside it (FM-1 SID's DEJAVU_MONO, the font its assets render).
   {"catalog": "<id>", "why": "..."}
       another Hub firmware, fetched at its own pin into the work dir's src/ (recipes read it there).
 Commits are full SHA-1s and paths stay inside the tree, so a deps file can't name a moving branch or write outside.
@@ -59,13 +59,23 @@ def validate(fid, deps):
         inside(Path("/t"), d.get("path"))
         if "env" in d and not ENV.fullmatch(d["env"]):
             raise SystemExit(f"deps/{fid}.json: env {d['env']!r} is not a variable name")
+        if "env_file" in d:
+            if "env" not in d:
+                raise SystemExit(f"deps/{fid}.json: env_file {d['env_file']!r} without an env to set")
+            inside(Path("/t"), d["env_file"])
         for a in d.get("apply", []):
             inside(Path("/t"), a)
 
 
 def env(fid, tree):
-    """the variables the build sets for the deps that name one ("env": the dependency's directory)"""
-    return {d["env"]: str(inside(Path(tree).resolve(), d["path"])) for d in load(fid) if "env" in d}
+    """the variables the build sets for the deps that name one ("env": the dependency's directory, or its
+    "env_file")"""
+    out = {}
+    for d in load(fid):
+        if "env" in d:
+            p = inside(Path(tree).resolve(), d["path"])
+            out[d["env"]] = str(inside(p, d["env_file"]) if "env_file" in d else p)
+    return out
 
 
 def git(*args, cwd):
