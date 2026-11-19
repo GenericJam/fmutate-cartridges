@@ -1,0 +1,14 @@
+The shipped MIDI map docs/MIDI_MAP_DEFAULTS.csv is not in the v0.1.0-beta tree; deps/lrry.json places upstream's own
+commit 91bf559 (branch claude/jolly-goodall-agfty2), which holds it as fw/docs/MIDI_MAP_DEFAULTS.csv, at _pinned/LRRY-91bf559.
+Point gen_midi_map.py's default csv there; nothing else changes.
+--- a/lrry/tools/gen_midi_map.py
++++ b/lrry/tools/gen_midi_map.py
+@@ -34,7 +34,7 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ SRC = HERE.parent / "firmware" / "src"
+-DOCS_CSV = HERE.parents[1] / "docs" / "MIDI_MAP_DEFAULTS.csv"
++DOCS_CSV = HERE.parents[1] / "_pinned" / "LRRY-91bf559" / "fw" / "docs" / "MIDI_MAP_DEFAULTS.csv"
+ 
+ # the actions (firmware/src/midi_map.h MAP_T_*), the fixed part of the list of targets
+ ACTIONS = ["MORPH", "ROLL_A", "ROLL_B", "UNDO", "ROLL", "AMOUNT", "TARGET", "SMART", "ARP", "PITCH", "MODE", "SPARE_BAL", "XFADE", "SPLIT",

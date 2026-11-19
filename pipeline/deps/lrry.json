@@ -1,0 +1,10 @@
+{
+ "deps": [
+  {
+   "repo": "oscillr/LRRY",
+   "commit": "91bf55949f34a9374bb9093d6462831e6d9df34b",
+   "path": "_pinned/LRRY-91bf559",
+   "why": "docs/MIDI_MAP_DEFAULTS.csv, which lrry/tools/gen_midi_map.py reads (tools/build.py generate(), gen_only.py), was left out of the squashed v0.1.0-beta commit f83cc01 (a parentless root). Upstream's own branch claude/jolly-goodall-agfty2 at 91bf559 (2026-10-30, the newest commit of the pre-release L/RRY history; the release's own history starts at f83cc01) holds it as fw/docs/MIDI_MAP_DEFAULTS.csv, one blob (c3711b5) unchanged since it was added in e937e4d; run through f83cc01's gen_midi_map.py it gives lrry/build_gt/midi_map_defaults.h (REV 193, the header committed with the release) byte for byte. patches/lrry/001-midi-map-csv.patch points the generator at it. (The multis need nothing: f83cc01's factory_multis.py has MULTIS = [], so gen_lrry_multis.py reads no M*.bin.)"
+  }
+ ]
+}
