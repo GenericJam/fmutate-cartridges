@@ -1,0 +1,84 @@
+# Reusable workflow: one isolated Linux build + parity-check + Android-ABIs job per firmware.
+# Called in chunks of <=150 by cartridges.yml to stay under GitHub Actions' 256-job matrix cap.
+name: build-android
+
+on:
+  workflow_call:
+    inputs:
+      ids:
+        description: "JSON array of firmware ids (<=150)"
+        required: true
+        type: string
+
+permissions: {}
+
+env:
+  FM1_CATALOG_DIR: ${{ github.workspace }}/work
+  FM1_ENGINE_DIR: ${{ github.workspace }}/engine
+  NDK_VERSION: r27c
+
+jobs:
+  android:
+    name: android (${{ matrix.id }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions: { contents: read }
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        id: ${{ fromJson(inputs.ids) }}
+    env:
+      ID: ${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: pins, path: pipeline }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: engine, path: engine }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.12" }
+      - name: Tools
+        run: |
+          sudo apt-get update -q >/dev/null
+          sudo apt-get install -y -q clang lld libfribidi0 >/dev/null
+          pip install -q --require-hashes -r pipeline/requirements.txt
+          chmod +x engine/*
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
+        id: ndk
+        with: { ndk-version: "${{ env.NDK_VERSION }}", add-to-path: false }
+      - name: Fetch
+        run: for _ in 1 2 3; do sh pipeline/fetch.sh "$ID" | tee fetch.log; grep -q "FETCH FAILED" fetch.log || break; sleep 20; done
+      - name: Build (this computer) and check against the emulator
+        run: |
+          python3 pipeline/build.py "$ID" --target host || true
+          [ -f "work/out/host/libcart_$ID.so" ] && python3 pipeline/verify.py "$ID" || true
+      - name: Build (Android)
+        env: { ANDROID_NDK_HOME: "${{ steps.ndk.outputs.ndk-path }}" }
+        run: |
+          for t in android-arm64-v8a android-x86_64 android-armeabi-v7a; do python3 pipeline/build.py "$ID" --target $t || true; done
+      - name: Summary
+        run: |
+          python3 - <<'EOF' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, "pipeline")
+          from report import verdict
+          fid, w = os.environ["ID"], Path("work")
+          res = {t: json.loads(p.read_text()) for p in w.glob(f"results/{fid}.*.json") for t in [p.name[len(fid) + 1:-5]]}
+          v = w / "verify" / f"{fid}.json"
+          rec = ((res.get("host") or {}).get("recipe") or {}).get("recipe")
+          check = verdict(json.loads(v.read_text()), rec) if v.exists() else ("unchecked", [])
+          print(f"{fid}: {check[0]} {'; '.join(check[1])[:200]} | " + ", ".join(
+              f"{t} {'ok' if r.get('ok') else 'failed at ' + str(r.get('stage'))}" for t, r in sorted(res.items())))
+          EOF
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: cart-android-${{ matrix.id }}
+          path: |
+            work/results/${{ matrix.id }}.*
+            work/verify/${{ matrix.id }}.*
+            work/out/*/libcart_${{ matrix.id }}.so
+          if-no-files-found: ignore

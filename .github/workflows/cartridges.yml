@@ -39,6 +39,7 @@ jobs:
     permissions: { contents: read }
     outputs:
       ids: ${{ steps.plan.outputs.ids }}
+      chunks: ${{ steps.plan.outputs.chunks }}
       any: ${{ steps.plan.outputs.any }}
       hub_updated: ${{ steps.plan.outputs.hub_updated }}
     steps:
@@ -66,10 +67,13 @@ jobs:
           set -f
           if [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all)
           else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS); fi
+          chunks=$(python3 -c 'import json, sys; ids = json.loads(sys.argv[1]); n = 150; print(json.dumps([{"n": i // n + 1, "ids": json.dumps(ids[i:i+n])} for i in range(0, len(ids), n)]))' "$ids")
+          count=$(python3 -c 'import json, sys; print(len(json.loads(sys.argv[1])))' "$ids")
           echo "ids=$ids" >> "$GITHUB_OUTPUT"
+          echo "chunks=$chunks" >> "$GITHUB_OUTPUT"
           [ "$ids" = "[]" ] && echo "any=false" >> "$GITHUB_OUTPUT" || echo "any=true" >> "$GITHUB_OUTPUT"
           echo "hub_updated=$(python3 -c 'import json; print(json.load(open("catalog.json"))["updated"])')" >> "$GITHUB_OUTPUT"
-          echo "building: $ids" >> "$GITHUB_STEP_SUMMARY"
+          echo "building ($count): $ids" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: pins, path: pipeline/pins.json }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -96,82 +100,30 @@ jobs:
         with: { name: engine, path: engine }
 
   android:
-    # this computer's build + the parity check + the three Android ABIs, one firmware per job
-    name: android (${{ matrix.id }})
+    # this computer's build + the parity check + the three Android ABIs, one firmware per job (chunked <=150 for the 256-job matrix cap)
+    name: android batch ${{ matrix.chunk.n }}
     needs: [plan, engine]
     if: needs.plan.outputs.any == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
     permissions: { contents: read }
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 2
       matrix:
-        id: ${{ fromJson(needs.plan.outputs.ids) }}
-    env:
-      ID: ${{ matrix.id }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { persist-credentials: false }
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with: { name: pins, path: pipeline }
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with: { name: engine, path: engine }
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with: { python-version: "3.12" }
-      - name: Tools
-        run: |
-          sudo apt-get update -q >/dev/null
-          sudo apt-get install -y -q clang lld libfribidi0 >/dev/null
-          pip install -q --require-hashes -r pipeline/requirements.txt
-          chmod +x engine/*
-      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
-        id: ndk
-        with: { ndk-version: "${{ env.NDK_VERSION }}", add-to-path: false }
-      - name: Fetch
-        run: for _ in 1 2 3; do sh pipeline/fetch.sh "$ID" | tee fetch.log; grep -q "FETCH FAILED" fetch.log || break; sleep 20; done
-      - name: Build (this computer) and check against the emulator
-        run: |
-          python3 pipeline/build.py "$ID" --target host || true
-          [ -f "work/out/host/libcart_$ID.so" ] && python3 pipeline/verify.py "$ID" || true
-      - name: Build (Android)
-        env: { ANDROID_NDK_HOME: "${{ steps.ndk.outputs.ndk-path }}" }
-        run: |
-          for t in android-arm64-v8a android-x86_64 android-armeabi-v7a; do python3 pipeline/build.py "$ID" --target $t || true; done
-      - name: Summary
-        run: |
-          python3 - <<'EOF' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, os, sys
-          from pathlib import Path
-          sys.path.insert(0, "pipeline")
-          from report import verdict
-          fid, w = os.environ["ID"], Path("work")
-          res = {t: json.loads(p.read_text()) for p in w.glob(f"results/{fid}.*.json") for t in [p.name[len(fid) + 1:-5]]}
-          v = w / "verify" / f"{fid}.json"
-          rec = ((res.get("host") or {}).get("recipe") or {}).get("recipe")
-          check = verdict(json.loads(v.read_text()), rec) if v.exists() else ("unchecked", [])
-          print(f"{fid}: {check[0]} {'; '.join(check[1])[:200]} | " + ", ".join(
-              f"{t} {'ok' if r.get('ok') else 'failed at ' + str(r.get('stage'))}" for t, r in sorted(res.items())))
-          EOF
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: cart-android-${{ matrix.id }}
-          path: |
-            work/results/${{ matrix.id }}.*
-            work/verify/${{ matrix.id }}.*
-            work/out/*/libcart_${{ matrix.id }}.so
-          if-no-files-found: ignore
+        chunk: ${{ fromJson(needs.plan.outputs.chunks) }}
+    uses: ./.github/workflows/_build-android.yml
+    with:
+      ids: ${{ matrix.chunk.ids }}
 
   gate:
     # the parity gate: iOS builds only what passed the check
-    needs: [plan, android]
-    if: always() && needs.plan.outputs.any == 'true'
+    needs: [plan, engine, android]
+    if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && (needs.android.result == 'success' || needs.android.result == 'failure')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions: { contents: read }
     outputs:
       ids: ${{ steps.gate.outputs.ids }}
+      chunks: ${{ steps.gate.outputs.chunks }}
       any: ${{ steps.gate.outputs.any }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -185,51 +137,36 @@ jobs:
       - id: gate
         run: |
           mkdir -p artifacts
+          if ! compgen -G "artifacts/cart-android-*" >/dev/null; then
+            echo "gate: no cart-android-* artifacts found despite planned builds" >&2
+            exit 1
+          fi
           ids=$(python3 pipeline/gate.py --artifacts artifacts 2>gate.txt)
+          chunks=$(python3 -c 'import json, sys; ids = json.loads(sys.argv[1]); n = 150; print(json.dumps([{"n": i // n + 1, "ids": json.dumps(ids[i:i+n])} for i in range(0, len(ids), n)]))' "$ids")
           { echo '```'; cat gate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           echo "ids=$ids" >> "$GITHUB_OUTPUT"
+          echo "chunks=$chunks" >> "$GITHUB_OUTPUT"
           [ "$ids" = "[]" ] && echo "any=false" >> "$GITHUB_OUTPUT" || echo "any=true" >> "$GITHUB_OUTPUT"
 
   ios:
     # static libraries for the iOS app build, only for what passed the gate. macOS runners are few (5 at a time on
     # the free plan) and can queue for a while: queued jobs just wait; a lost runner is retried by retry.yml.
-    name: ios (${{ matrix.id }})
+    name: ios batch ${{ matrix.chunk.n }}
     needs: [gate]
-    if: always() && needs.gate.outputs.any == 'true'
-    runs-on: macos-15
-    timeout-minutes: 45
+    if: always() && needs.gate.result == 'success' && needs.gate.outputs.any == 'true'
     permissions: { contents: read }
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 1
       matrix:
-        id: ${{ fromJson(needs.gate.outputs.ids) }}
-    env:
-      ID: ${{ matrix.id }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { persist-credentials: false }
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with: { name: pins, path: pipeline }
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with: { python-version: "3.12" }
-      - run: pip install -q --require-hashes -r pipeline/requirements.txt
-      - name: Fetch
-        run: for _ in 1 2 3; do sh pipeline/fetch.sh "$ID" | tee fetch.log; grep -q "FETCH FAILED" fetch.log || break; sleep 20; done
-      - name: Build (iOS device, simulator)
-        run: for t in ios-device ios-sim; do python3 pipeline/build.py "$ID" --target $t || true; done
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: cart-ios-${{ matrix.id }}
-          path: |
-            work/results/${{ matrix.id }}.ios-*
-            work/out/ios-*/libcart_${{ matrix.id }}.a
-          if-no-files-found: ignore
+        chunk: ${{ fromJson(needs.gate.outputs.chunks) }}
+    uses: ./.github/workflows/_build-ios.yml
+    with:
+      ids: ${{ matrix.chunk.ids }}
 
   publish:
     needs: [plan, engine, android, gate, ios]
-    if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && needs.gate.result == 'success'
+    if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && needs.gate.result == 'success' && needs.ios.result != 'cancelled'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions: { contents: write }
@@ -255,6 +192,7 @@ jobs:
           if [ -f pages/index.json ]; then prev="--prev pages/index.json"; else prev="--first"; fi
           umask 077
           key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
           printf '%s\n' "$SIGNING_KEY" > "$key"
           python3 pipeline/publish.py --artifacts artifacts --tag "$tag" --out dist --key "$key" $prev \
             --hub-updated "$HUB_UPDATED" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -287,5 +225,6 @@ jobs:
           touch pages/.nojekyll
           cd pages
           git add index.json index.json.sig .nojekyll
-          git -c user.name=fmutate-cartridges -c user.email=actions@github.com commit -q -m "index: run ${{ github.run_number }}.${{ github.run_attempt }}" || exit 0
+          if git diff --cached --quiet; then echo "index unchanged"; exit 0; fi
+          git -c user.name=fmutate-cartridges -c user.email=actions@github.com commit -q -m "index: run ${{ github.run_number }}.${{ github.run_attempt }}"
           git push origin HEAD:gh-pages

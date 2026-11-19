@@ -122,7 +122,11 @@ def main():
     tried = {f["id"]: f for f in prev.get("tried", [])}
     today = date.today().isoformat()
 
-    for fid, b in sorted(collect(Path(a.artifacts), pins).items()):
+    built = collect(Path(a.artifacts), pins)
+    if not built:
+        raise SystemExit("publish: no firmware artifacts collected; refusing to write an empty index")
+
+    for fid, b in sorted(built.items()):
         pin = pins[fid]
         host_r = b["results"].get("host") or {}
         recipe = host_r.get("recipe") or {}

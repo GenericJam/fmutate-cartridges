@@ -1,0 +1,51 @@
+# Reusable workflow: one isolated macOS iOS-static-library build job per firmware.
+# Called in chunks of <=150 by cartridges.yml to stay under GitHub Actions' 256-job matrix cap.
+name: build-ios
+
+on:
+  workflow_call:
+    inputs:
+      ids:
+        description: "JSON array of firmware ids (<=150)"
+        required: true
+        type: string
+
+permissions: {}
+
+env:
+  FM1_CATALOG_DIR: ${{ github.workspace }}/work
+  FM1_ENGINE_DIR: ${{ github.workspace }}/engine
+
+jobs:
+  ios:
+    name: ios (${{ matrix.id }})
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions: { contents: read }
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        id: ${{ fromJson(inputs.ids) }}
+    env:
+      ID: ${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: pins, path: pipeline }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.12" }
+      - run: pip install -q --require-hashes -r pipeline/requirements.txt
+      - name: Fetch
+        run: for _ in 1 2 3; do sh pipeline/fetch.sh "$ID" | tee fetch.log; grep -q "FETCH FAILED" fetch.log || break; sleep 20; done
+      - name: Build (iOS device, simulator)
+        run: for t in ios-device ios-sim; do python3 pipeline/build.py "$ID" --target $t || true; done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: cart-ios-${{ matrix.id }}
+          path: |
+            work/results/${{ matrix.id }}.ios-*
+            work/out/ios-*/libcart_${{ matrix.id }}.a
+          if-no-files-found: ignore
