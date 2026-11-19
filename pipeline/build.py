@@ -12,7 +12,8 @@ firmware changed): each has ORDER, detect(source_dir, id) -> recipe dict or None
 result) -> (cartridge path or None, failed stage). The first to recognise a tree builds it: dinghy (zvenson's Dinghy
 platform), web (the X0X lineage's browser builds), ...
 Generic shims, tried when a plain build fails: shims/include (emscripten.h; ELF-only section attributes on
-Mach-O). A firmware needing more than that is a per-firmware patch (pipeline/patches/<id>/*.patch).
+Mach-O; libproc.h for Mac host code built for iOS). A firmware needing more than that is a per-firmware patch
+(pipeline/patches/<id>/*.patch).
 """
 import argparse
 import importlib
