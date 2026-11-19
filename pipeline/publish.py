@@ -14,9 +14,11 @@ the reason, so the next run doesn't build the same commit again. Firmwares not b
 from --prev, the published index (a file: the workflow reads the gh-pages branch's copy), whose signature (INDEX.sig)
 must verify against signing.pub.pem; --first is the one run with no index yet.
 
-Writes DIST/assets/libcart_<id>-<version>-<platform>.<so|a> (+ .sig each) and DIST/index.json + index.json.sig,
-signed with --key (Ed25519 PEM, `openssl genpkey -algorithm ed25519`) through openssl. Asset URLs are
-https://github.com/<repo>/releases/download/<tag>/<file>.
+Writes DIST/assets/<release>/libcart_<id>-<version>-<platform>.<so|a> and DIST/index.json + index.json.sig, signed
+with --key (Ed25519 PEM, `openssl genpkey -algorithm ed25519`) through openssl; each asset's signature is in its index
+entry ("sig"). A run's assets go to release TAG, then TAG-2, TAG-3 ... PER_RELEASE at a time (GitHub keeps at most
+1000 assets in a release); release.py uploads them. Asset URLs are
+https://github.com/<repo>/releases/download/<release>/<file>.
 """
 import argparse
 import base64
@@ -42,6 +44,7 @@ KINDS = {"android": ("host", "android-arm64-v8a", "android-x86_64", "android-arm
 PLATFORMS = KINDS["android"][1:] + KINDS["ios"]
 SUFFIX = {"android": ".so", "ios": ".a"}
 JOB = re.compile(r"cart-(android|ios)-([A-Za-z0-9_.-]+)")
+PER_RELEASE = 900                               # (and the run's pins.json beside them)
 
 
 def sign(key, path):
@@ -125,6 +128,7 @@ def main():
     built = collect(Path(a.artifacts), pins)
     if not built:
         raise SystemExit("publish: no firmware artifacts collected; refusing to write an empty index")
+    n_assets = 0
 
     for fid, b in sorted(built.items()):
         pin = pins[fid]
@@ -142,16 +146,16 @@ def main():
             tried[fid] = {**base, "check": check, "reason": reason[:300], "date": today}
             continue
         assets = {}
-        for platform, src in b["files"].items():
-            name = f"libcart_{fid}-{pin['version']}-{platform}{src.suffix}".replace("/", "_")
-            dst = out / "assets" / name
+        for platform, src in sorted(b["files"].items()):
+            name = re.sub(r"[^A-Za-z0-9._-]", "_", f"libcart_{fid}-{pin['version']}-{platform}{src.suffix}")
+            release = a.tag if n_assets < PER_RELEASE else f"{a.tag}-{n_assets // PER_RELEASE + 1}"
+            n_assets += 1
+            dst = out / "assets" / release / name
+            dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dst)
-            sig = sign(a.key, dst) if a.key else ""
-            if sig:
-                (out / "assets" / (name + ".sig")).write_text(sig + "\n")
-            assets[platform] = {"url": f"https://github.com/{a.repo}/releases/download/{a.tag}/{name}",
+            assets[platform] = {"url": f"https://github.com/{a.repo}/releases/download/{release}/{name}",
                                 "sha256": hashlib.sha256(dst.read_bytes()).hexdigest(), "size": dst.stat().st_size,
-                                "sig": sig}
+                                "sig": sign(a.key, dst) if a.key else ""}
         tried.pop(fid, None)
         c = (v or {}).get("compare", {})
         old = entries.get(fid, {})
@@ -176,7 +180,7 @@ def main():
         (out / "index.json.sig").write_text(sign(a.key, ip) + "\n")
     n = {p: sum(1 for f in index["firmwares"] if p in f["assets"]) for p in PLATFORMS}
     print(f"index: {len(index['firmwares'])} published, {len(index['tried'])} tried; "
-          f"{sum(1 for p in (out / 'assets').iterdir() if p.suffix in ('.so', '.a'))} assets this run; "
+          f"{n_assets} assets this run; "
           f"published per platform {json.dumps(n)}")
 
 

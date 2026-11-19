@@ -177,7 +177,7 @@ jobs:
     needs: [plan, engine, android, gate, ios]
     if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && needs.gate.result == 'success' && needs.ios.result != 'cancelled'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions: { contents: write }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -201,7 +201,6 @@ jobs:
         run: |
           mkdir -p artifacts
           tag="build-$(date -u +%Y%m%d)-${{ github.run_number }}.${{ github.run_attempt }}"
-          echo "TAG=$tag" >> "$GITHUB_ENV"
           if [ -f pages/index.json ]; then prev="--prev pages/index.json"; else prev="--first"; fi
           umask 077
           key=$(mktemp)
@@ -220,18 +219,14 @@ jobs:
                                        "-rawin", "-in", "dist/index.json", "-sigfile", s.name]).returncode)
           EOF
       - name: Release assets
-        env: { GH_TOKEN: "${{ github.token }}" }
+        # every asset the index names must be in its release before the index goes out (release.py waits out the
+        # token's rate limit, so a run that rebuilds everything may take most of an hour here)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: "Cartridges built by run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Each is built from the firmware's pinned public source commit (pins.json here; the index names repo and commit per firmware, and each cartridge's signature); GPL source offer: README."
         run: |
-          if ls dist/assets/libcart_* >/dev/null 2>&1; then
-            cp pipeline/pins.json dist/assets/pins.json
-            for _ in 1 2 3; do
-              gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" \
-                --notes "Cartridges built by run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Each is built from the firmware's pinned public source commit (pins.json here; the index names repo and commit per firmware); GPL source offer: README." && \
-              gh release upload "$TAG" dist/assets/* --clobber && break
-              sleep 30
-            done
-            gh release view "$TAG" >/dev/null
-          fi
+          python3 pipeline/release.py --assets dist/assets --index dist/index.json --repo "$GITHUB_REPOSITORY" \
+            --extra pipeline/pins.json --notes "$NOTES"
       - name: Index to GitHub Pages (gh-pages)
         run: |
           cp dist/index.json dist/index.json.sig pages/

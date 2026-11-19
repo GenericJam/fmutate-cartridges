@@ -16,9 +16,12 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
   version, source repository and pinned commit, licence, how it built (`clean`, `shims`, `patch`), the parity numbers
   and, per platform (`android-arm64-v8a`, `android-x86_64`, `android-armeabi-v7a`, `ios-device`, `ios-sim`), the asset
   URL, SHA-256, size and signature. Firmwares that were tried and not published are listed under `tried` with the reason.
-- **Assets**: GitHub Releases, one release per run (`build-YYYYMMDD-<run>.<attempt>`), each cartridge with a `.sig`,
-  plus that run's `pins.json`.
-- **Signatures**: Ed25519 over the exact bytes of `index.json` and of each asset, base64. The public key
+- **Assets**: GitHub Releases, one per run (`build-YYYYMMDD-<run>.<attempt>`; a run with more than 900 cartridges
+  continues in `...-2`, `...-3`: GitHub keeps at most 1000 assets in a release), each with that run's `pins.json`.
+  The index goes out only once every cartridge it names is in its release with its size and SHA-256
+  (`pipeline/release.py`).
+- **Signatures**: Ed25519 over the exact bytes of `index.json` and of each asset, base64 (an asset's in its index
+  entry). The public key
   (`pipeline/signing.pub.pem`; raw, base64: `PlTQbGPmAqukMY78jvsMLR6BBxPQAa2E3T77ofuv8h8=`) is built into FMutate,
   which refuses an index or a cartridge that doesn't verify. The private key exists only as the Actions secret
   `CARTRIDGE_SIGNING_KEY`, read by the publish job alone.
