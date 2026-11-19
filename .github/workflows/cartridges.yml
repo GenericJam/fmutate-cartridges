@@ -46,13 +46,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - name: Published index (gh-pages)
+        # (a missing branch means the first run; a failed fetch must fail, not plan everything as new)
         run: |
           mkdir -p prev
-          if git fetch -q --depth 1 origin gh-pages; then
+          rc=0; git ls-remote --exit-code --heads origin gh-pages >/dev/null || rc=$?
+          if [ "$rc" = 0 ]; then
+            git fetch -q --depth 1 origin gh-pages
             git show FETCH_HEAD:index.json > prev/index.json
             git show FETCH_HEAD:index.json.sig > prev/index.json.sig
-          else
+          elif [ "$rc" = 2 ]; then
             echo "no gh-pages yet: the first run"
+          else
+            echo "gh-pages: git ls-remote failed ($rc)" >&2; exit 1
           fi
       - name: Pins from the Hub's catalogue
         run: |
@@ -179,8 +184,12 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.12" }
       - name: Pages branch
+        # only a branch that doesn't exist starts a new index (--first); a failed fetch fails the job
         run: |
-          if git fetch -q origin gh-pages; then git worktree add -q pages FETCH_HEAD; else git worktree add -q --orphan -b gh-pages pages; fi
+          rc=0; git ls-remote --exit-code --heads origin gh-pages >/dev/null || rc=$?
+          if [ "$rc" = 0 ]; then git fetch -q origin gh-pages; git worktree add -q pages FETCH_HEAD
+          elif [ "$rc" = 2 ]; then git worktree add -q --orphan -b gh-pages pages
+          else echo "gh-pages: git ls-remote failed ($rc)" >&2; exit 1; fi
       - name: Index, signed
         env:
           SIGNING_KEY: ${{ secrets.CARTRIDGE_SIGNING_KEY }}
