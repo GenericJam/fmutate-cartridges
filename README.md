@@ -29,18 +29,22 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
 
 1. **plan**: reads the Hub's `catalog.json`, pins every firmware to a commit (`pipeline/pins.py`: the Hub's build
    provenance, else its source ref, else the release tag, else the default branch's HEAD on the day, flagged `head`),
-   and picks what is new or changed since the published index (`pipeline/plan.py`).
+   and picks what is new or changed since the published index (`pipeline/plan.py`): a pin already published or already
+   tried is not built again. When nothing is new the run stops here, green, and the published index stays as it is.
 2. **engine**: builds FMutate's native engine and emulator engine at a pinned FMutate commit (`pipeline/engine.sh`).
-3. **android** (one job per firmware, Linux): fetches the source at its pin (`pipeline/fetch.sh`, plus pinned
+3. **android** (one job per firmware, Linux; in batches of at most 150, `.github/workflows/_build-android.yml`, under
+   GitHub's 256-job matrix limit): fetches the source at its pin (`pipeline/fetch.sh`, plus pinned
    dependencies from `pipeline/deps/<id>.json`), builds it for the runner (`pipeline/build.py --target host`), checks it
    against the emulator (`pipeline/verify.py`), then builds the three Android ABIs.
 4. **gate**: the firmwares whose check is `match` or `silent` (or accepted by a person in `pipeline/overrides.json`).
-5. **ios** (one job per firmware that passed, macOS): `ios-device` and `ios-sim` static libraries. macOS runners are
-   few (5 at a time); jobs queue rather than fail. A job that fails anyway (a lost runner) is re-run, up to twice, by
-   `.github/workflows/retry.yml`.
+5. **ios** (one job per firmware that passed, macOS, batched the same way: `.github/workflows/_build-ios.yml`):
+   `ios-device` and `ios-sim` static libraries. macOS runners are few (5 at a time); jobs queue rather than fail. A job
+   that fails anyway (a lost runner) is re-run, up to twice, by `.github/workflows/retry.yml`.
 6. **publish**: signs the assets and the index (`pipeline/publish.py`), uploads the release, pushes the index to
    `gh-pages`. A firmware that doesn't build doesn't fail its job: it lands in the index's `tried` list, so a green run
-   means the pipeline worked, and the step summaries list each firmware's outcome.
+   means the pipeline worked, and the step summaries list each firmware's outcome. The new index starts from the
+   published one (its signature checked) and only adds or updates this run's firmwares; a rebuild of a published pin
+   that fails keeps the published entry.
 
 ## Run it locally
 
@@ -92,7 +96,8 @@ The pipeline itself (everything in this repository) is GPL-3.0, as FMutate (`LIC
 - `publish.py` takes from each job's artifact only the files of that job's firmware, so one firmware's build can't
   replace another's cartridge, and it refuses to extend a previous index whose signature doesn't verify.
 - Firmware sources, dependencies (`deps/`), FMutate's engine and fm1-emu are fetched at full commit SHAs; the
-  workflow's actions are pinned by SHA; Python packages by hash (`pipeline/requirements.txt`).
+  workflow's actions are pinned by SHA; Python packages by hash (`pipeline/requirements.txt`); the one native tool
+  built on the macOS runners (FriBiDi, for Pillow's text layout) from its release tarball, by SHA-256.
 - A cartridge is native code from the firmware's author running in FMutate's process: publishing one trusts its
   author as much as installing their firmware on an FM-1 does. The parity gate checks behaviour, not intent.
 
