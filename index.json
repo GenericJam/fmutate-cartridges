@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "generated": "2026-11-19T20:53:55Z",
+ "generated": "2026-11-19T21:04:48Z",
  "engine_abi": 1,
  "hub_updated": "2026-11-19 18:02 UTC",
  "firmwares": [
@@ -70,31 +70,43 @@
    "patches": [],
    "parity": {
     "status": "match",
-    "level_diff_db": 0.5,
-    "spectrum_corr": 0.996,
-    "screen_diff": 1.5,
+    "level_diff_db": -0.4,
+    "spectrum_corr": 0.99,
+    "screen_diff": 1.3,
     "notes": ""
    },
    "added": "2026-11-19",
    "updated": "2026-11-19",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_frasil-3.3.1-android-arm64-v8a.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_frasil-3.3.1-android-arm64-v8a.so",
      "sha256": "e1d8ade29e812a418f9ce06663e5a2b32bbb724fa578bf8bb528a262b153f9d9",
      "size": 940584,
      "sig": "qAdO1EpEbn8oJ6ldSHoLbh7k3lIuqHmKGLuACydUSJBZHHQw4URXmyWpQJLg6JFnM+Abt6r5z3yglYHxZA10Dw=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_frasil-3.3.1-android-x86_64.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_frasil-3.3.1-android-x86_64.so",
      "sha256": "80562fc756dfca78ee46d82780b592e061a489ec3d88acaef0fbc333e213c985",
      "size": 1034328,
      "sig": "stYlMC6jcii4g3P1jKJpJvynyfwYxVEDNlg6DVFxJ4N2bsqXXwJCzX04AP1kGCEmUQIOvV7KXxf7udxwy7BaCQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_frasil-3.3.1-android-armeabi-v7a.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_frasil-3.3.1-android-armeabi-v7a.so",
      "sha256": "d9c028e36aab5f98eca8135e93e5c344ae96c634a4c04344e9e9ce7493d0e6be",
      "size": 943568,
      "sig": "8OiseBQvVUrqLeP0WBOYyYvZGehIG687Yea0Z4ceW7lvHcz7KqFmIYJ2VO9txD/9MGcLFVS0U+zk/O/5QY9JBg=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_frasil-3.3.1-ios-device.a",
+     "sha256": "5f2877b79e513151eca7a916829435bb35db342ed00fbe120d1650fabd7bf4d4",
+     "size": 1288568,
+     "sig": "cFE6yXz53GUWZNoV0E2UjZ9OwuWGdNoXIs4YGbTO7xwWwb4vksNy43WBNvqqMhnV7UHb7PzlVoO4kT1CjLL/BQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_frasil-3.3.1-ios-sim.a",
+     "sha256": "9d3519cd837c931d43c4edf17831c9601c0851ba61649d4c2bd427b0a808059c",
+     "size": 1294952,
+     "sig": "gZxTdrM4+ArpE4OzJuH+P+qBmFm0OH5CpNDz9vTWzLMCiymQbUnzHof50pRLjQH961ouqx6s2Jr7jpX9FU8wBw=="
     }
    }
   },
@@ -205,6 +217,59 @@
    }
   },
   {
+   "id": "skiff",
+   "version": "2.7",
+   "repo": "illuminus5/skiff",
+   "commit": "b257ddf6a15a21f6c5956abc9c19c0571daa8e15",
+   "pin": "tag",
+   "name": "Skiff",
+   "license": "GPL-3.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.0,
+    "spectrum_corr": 1.0,
+    "screen_diff": 0.7,
+    "notes": ""
+   },
+   "added": "2026-11-19",
+   "updated": "2026-11-19",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_skiff-2.7-android-arm64-v8a.so",
+     "sha256": "cd3fdac7061ceef4bc7d286e53c669f3f1344b5e5dd215bfc4412ca69610f067",
+     "size": 1391920,
+     "sig": "GA6wWbSsbQde2K2XHvM4oT47maEKXmsp6ncncbvCG0xvj8/OzqOiZQdpb47t+d1brUURWsIgN3MSWaH+fRuJCw=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_skiff-2.7-android-x86_64.so",
+     "sha256": "ad8554a42c4eb1ae0c93f82ce02398853f3d497960267065676e6bb943340f08",
+     "size": 1555816,
+     "sig": "Q1W87P1W1s38N7TFr5UWnkmeCVjPNi9PYnxAN5hqafO3troxhMNKm8iW8AFG68b/Tv4E21NjytNZ3sBr0fbUDA=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_skiff-2.7-android-armeabi-v7a.so",
+     "sha256": "773ae7c4f831bc384e5a2b28fc1275998b932e6b118c9aced341abd62e307960",
+     "size": 1373844,
+     "sig": "Lnsa2mw4gluSxK26DaM84f45kZaT2Nkj11p32ScV2LGAMELJT0ZTXoq1cSlRmyP8jc48cVTfAfL6kexArK4kAg=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_skiff-2.7-ios-device.a",
+     "sha256": "da52b59dfebe6e744d62c2ba9a107af5cc5a49d0b3ba93c296bdd6687c973556",
+     "size": 1855920,
+     "sig": "ah3xKwoD5kvg63iZVd3re3fX3L0OyHOvfb1Jq5rJu9aXBvzXTWZxuzlWBf2OSBK7MvUc8zxxuNjeAoiJvc4vAg=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_skiff-2.7-ios-sim.a",
+     "sha256": "627b9facff5df50067abe7b6bb279159b7c49ab54b4d66e80c87644f026c9367",
+     "size": 1869136,
+     "sig": "KvWuOI8hUQNAySO5IGqTGEwE2LIMIAK++qKqydcmCenyDk4aEXMP2y7JTf6K7Lkqkaw47jhpmjAIWDx4X2XGCQ=="
+    }
+   }
+  },
+  {
    "id": "x0x",
    "version": "1.2.2",
    "repo": "charlesvestal/fm1-x0x",
@@ -226,19 +291,19 @@
    "updated": "2026-11-19",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_x0x-1.2.2-android-arm64-v8a.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_x0x-1.2.2-android-arm64-v8a.so",
      "sha256": "7552ef0d1b95df715326b495cd0c34f735505f4ab65a92d7d1179808283356c3",
      "size": 772696,
      "sig": "+wAqOxuvTxRDDWqmljGRbD5WZEcATeIDOWyHTvqjlTDU6xD0UWra1M/KE24RxPpw/0iirOwo8vI3Mp3exvJrDQ=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_x0x-1.2.2-android-x86_64.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_x0x-1.2.2-android-x86_64.so",
      "sha256": "1b8162a7cd02be1b5bdea4f7fbdbcfb12fdb4fb84ab17bf5fa60d50da11ec964",
      "size": 809208,
      "sig": "8GY/K9t8pb8gSt4wDXOJ0NGrMr4xO5Vk9n8pXkAeRoyhUf5EfWcdyxiQAQOjO91si1HRENdYuKVEYB9ZuwXRAw=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-8.1/libcart_x0x-1.2.2-android-armeabi-v7a.so",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-9.1/libcart_x0x-1.2.2-android-armeabi-v7a.so",
      "sha256": "345bc892c9820043d36ed0c982e7bd6d80e2fa0db36ebf85191c05431bf5ae42",
      "size": 744800,
      "sig": "iPjH74xNKu3PLepkX3YX50Xq2TsnnyUEqwtT/HSBQgS7WOSbFkjUyzt44Y7eSr9HQuwOrYD78kw5zDqGOYC4Cw=="
@@ -246,16 +311,5 @@
    }
   }
  ],
- "tried": [
-  {
-   "id": "skiff",
-   "version": "2.7",
-   "repo": "illuminus5/skiff",
-   "commit": "b257ddf6a15a21f6c5956abc9c19c0571daa8e15",
-   "pin": "tag",
-   "check": "unchecked",
-   "reason": "no check ran",
-   "date": "2026-11-19"
-  }
- ]
+ "tried": []
 }
