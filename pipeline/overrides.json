@@ -1,0 +1,9 @@
+{
+ "pin": {
+  "jiant": {
+   "version": "V10.7.58",
+   "commit": "0fd8c4af61961c91258aecaf35981d0788263983",
+   "why": "the catalogue names no tag, srcref or provenance, and JIANT's default branch is a beta lineage diverged from the public one (compare 0fd8c4af...c4435437: 567 ahead, 552 behind), so a HEAD pin builds another firmware; web/PUBLIC_RELEASE.json at c4435437 records V10.7.58's source as 0fd8c4af with sha256 88cdb00e..., the Hub package's (built by JIANT's run 44523984757 at that commit)"
+  }
+ }
+}

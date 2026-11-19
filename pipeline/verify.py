@@ -187,16 +187,40 @@ PLAY_MS = 2500                                 # ... and tapped again after this
 END_MS = PLAY_AT + PLAY_MS + 500
 
 
-def emu_seed(fid):
+def ufw_entry(pkg, name):
+    """one file of a JieLi update package (.fwsc): the 20 identity marker bytes dropped, the ENC-masked header and file
+    list read; the named file's bytes (JIANT's "bt.bin", which its own update loader writes and fm1-emu doesn't)"""
+    def enc(b, key=0xFFFF):
+        b = bytearray(b)
+        for i in range(len(b)):
+            b[i] ^= key & 0xFF
+            key = ((key << 1) ^ (0x1021 if key & 0x8000 else 0)) & 0xFFFF
+        return b
+    log = b"".join(pkg[i * 0x30:i * 0x30 + 0x2F] for i in range(20)) + pkg[20 * 0x30:]
+    for i in range(struct.unpack_from("<H", enc(log[:0x40]), 8)[0]):
+        e = enc(log[0x40 + i * 0x50:0x40 + (i + 1) * 0x50])
+        off, size = struct.unpack_from("<II", e, 8)
+        if e[0x40:].rstrip(b"\0").decode(errors="replace") == name:
+            return bytes(log[off:off + size])
+    raise SystemExit(f"the package has no {name}")
+
+
+def emu_seed(fid, pkg):
     """The emulator's flash file for a firmware whose Hub package leaves out what its own installer writes besides
-    (emu_seed.json: {id: {url, sha256, at}}; Melodee's factory sounds at 0xCB000): the file, as fm1-emu's saved
-    sectors (records of a u32 LE offset and 4096 bytes), or None. The native build links them in."""
+    (emu_seed.json: {id: {url, sha256, at}}; Melodee's factory sounds at 0xCB000), or holds it as a file fm1-emu doesn't
+    install ({id: {entry, sha256, at}}: that file of the package itself; JIANT's Bluetooth segment at 0xEA000): the
+    file, as fm1-emu's saved sectors (records of a u32 LE offset and 4096 bytes), or None. The native build links them in."""
     seeds = json.loads((HERE / "emu_seed.json").read_text()) if (HERE / "emu_seed.json").exists() else {}
     s = seeds.get(fid)
     if not s:
         return None
     p = CAT / "pkg" / f"{fid}.seed.bin"
-    if not p.exists() or hashlib.sha256(p.read_bytes()).hexdigest() != s["sha256"]:
+    if "entry" in s:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(ufw_entry(Path(pkg).read_bytes(), s["entry"]))
+        if hashlib.sha256(p.read_bytes()).hexdigest() != s["sha256"]:
+            raise SystemExit(f"{fid}: the package's {s['entry']} doesn't match its SHA-256")
+    elif not p.exists() or hashlib.sha256(p.read_bytes()).hexdigest() != s["sha256"]:
         req = urllib.request.Request(s["url"], headers={"User-Agent": "fmutate-native-catalog"})
         data = urllib.request.urlopen(req, timeout=120).read()
         if hashlib.sha256(data).hexdigest() != s["sha256"]:
@@ -283,7 +307,8 @@ def main():
     e = None
     if not a.no_emu:
         try:
-            e = run(HOST / "libfm1emu.so", Path(a.pkg) if a.pkg else package(fid), flash=emu_seed(fid))
+            pkg = Path(a.pkg) if a.pkg else package(fid)
+            e = run(HOST / "libfm1emu.so", pkg, flash=emu_seed(fid, pkg))
             rep["emu"] = e[0]
         except Exception as ex:
             rep["emu_error"] = str(ex)[-600:]

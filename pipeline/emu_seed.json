@@ -22,5 +22,11 @@
   "sha256": "441c5eb52f625f1850efe80e26bb9777e50d9c0a45035661992d80b93ee41d3f",
   "at": 700416,
   "why": "the Hub package has no resource region (its samples; fm1-base device/res.c at 0xab000); the release's polly-0.6.4-res.bin is what the installer writes"
+ },
+ "jiant": {
+  "entry": "bt.bin",
+  "sha256": "cc627db6dbba6fd4b5faefa7f2c5460d55250e1418c2b0ec7c6bd05e720f1484",
+  "at": 958464,
+  "why": "the Hub package holds JIANT's Bluetooth segment (Bluetooth, GEN, the songs' saving, USB HOST) as a third file, bt.bin, which JIANT's own update loader (firmware/loader/ldr_core.c) writes at flash 0xEA000; fm1-emu installs flash.bin only (and puts its default patch bank in that USR area), so without it the firmware says BLUETOOTH PART MISSING at power-on"
  }
 }
