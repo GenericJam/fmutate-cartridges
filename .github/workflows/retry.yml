@@ -1,7 +1,7 @@
 # Re-runs the failed jobs of a cartridges run, up to twice. A firmware that doesn't build doesn't fail its job (the
 # outcome goes to the index's "tried" list), so a failed job is the infrastructure's: a lost or timed-out runner
-# (macOS ones mostly), a download that kept failing. The re-run's publish job adds what it builds to the index
-# (its release tag carries the attempt number).
+# (macOS ones mostly), a download that kept failing, GitHub's rate limits outlasting the publish job's wait. The
+# re-run's publish job adds what it builds to the index and to the run's release.
 name: retry
 
 on:

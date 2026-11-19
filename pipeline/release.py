@@ -5,7 +5,7 @@
 
 DIST/assets/<tag>/ holds one release's files (publish.py splits a run's assets over releases: GitHub keeps at most
 1000 assets in one). Each release is created if missing; files it doesn't hold yet (by name, size and SHA-256) are
-uploaded, a few rounds, waiting out the token's rate limit when it runs out (a run that rebuilds everything uploads
+uploaded, paced and backing off whenever GitHub's rate limits stop it (a run that rebuilds everything uploads
 hundreds). Then every asset the index names (earlier runs' releases too) must be in its release with the index's size
 and SHA-256, or this exits non-zero and the index isn't published. Needs `gh` with GH_TOKEN (contents: write).
 """
@@ -17,8 +17,10 @@ import sys
 import time
 from pathlib import Path
 
-ROUNDS = 5
-MAX_WAIT_S = 65 * 60
+BATCH = 20                  # files per `gh release upload`
+PACE_S = 25                 # between batches: well under GitHub's 80 content-creating requests a minute
+BUDGET_S = 200 * 60         # (the publish job's timeout is 240 min)
+DEADLINE = time.monotonic() + BUDGET_S
 
 
 def gh(*args, check=True):
@@ -42,42 +44,56 @@ def same(path, got):
     return size == path.stat().st_size and sha in (None, hashlib.sha256(path.read_bytes()).hexdigest())
 
 
-def wait_for_rate_limit():
+def backoff(tries, why):
+    """after a failed call: until the token's hourly limit resets when it is spent, else 1, 2, 4 ... 16 min (GitHub's
+    secondary limits, on content creation among others, don't say when they lift)"""
+    wait = min(60 * 2 ** tries, 16 * 60)
     r = gh("api", "rate_limit", "-q", ".resources.core | [.remaining, .reset] | @tsv", check=False)
-    if r.returncode or not r.stdout.strip():
-        time.sleep(60)
-        return
-    remaining, reset = (int(x) for x in r.stdout.split())
-    if remaining > 50:
-        time.sleep(30)
-        return
-    wait = max(0, reset - int(time.time())) + 10
-    if wait > MAX_WAIT_S:
-        raise SystemExit(f"release: rate limit resets in {wait} s, past this job's budget")
-    print(f"release: rate limit ({remaining} left), waiting {wait} s", flush=True)
+    if not r.returncode and r.stdout.strip():
+        remaining, reset = (int(x) for x in r.stdout.split())
+        if remaining <= 50:
+            wait = max(wait, reset - int(time.time()) + 10)
+    if time.monotonic() + wait > DEADLINE:
+        raise SystemExit(f"release: out of time waiting for GitHub ({why})")
+    print(f"release: {why}; waiting {wait} s", flush=True)
     time.sleep(wait)
 
 
 def upload(repo, tag, files, notes):
-    for _ in range(ROUNDS):
+    tries = 0
+    while True:
         try:
             if gh("release", "view", tag, "-R", repo, check=False).returncode:
                 gh("release", "create", tag, "-R", repo, "--title", tag, "--notes", notes)
             have = held(repo, tag)
         except subprocess.CalledProcessError as e:
-            print(f"release {tag}: {' '.join(e.cmd[1:3])} failed: {e.stderr.strip()[-300:]}", flush=True)
-            wait_for_rate_limit()
+            backoff(tries, f"{tag}: {' '.join(e.cmd[1:3])} failed: {e.stderr.strip()[:300]}")
+            tries += 1
             continue
         todo = [f for f in files if f.name not in have or not same(f, have[f.name])]
         if not todo:
             return
         print(f"release {tag}: uploading {len(todo)} of {len(files)}", flush=True)
-        for i in range(0, len(todo), 50):
-            r = gh("release", "upload", tag, "-R", repo, "--clobber", *map(str, todo[i:i + 50]), check=False)
+        for i in range(0, len(todo), BATCH):
+            r = gh("release", "upload", tag, "-R", repo, "--clobber", *map(str, todo[i:i + BATCH]), check=False)
             if r.returncode:
-                print(f"release {tag}: upload failed: {r.stderr.strip()[-300:]}", flush=True)
-                wait_for_rate_limit()
+                backoff(tries, f"{tag}: upload failed: {r.stderr.strip()[:300]}")
+                tries += 1
                 break
+            tries = 0
+            time.sleep(PACE_S)
+
+
+def listed(repo, tag):
+    """held(), retried; {} for a release that doesn't exist"""
+    for tries in range(4):
+        try:
+            return held(repo, tag)
+        except subprocess.CalledProcessError as e:
+            if "404" in e.stderr:
+                return {}
+            backoff(tries, f"{tag}: listing failed: {e.stderr.strip()[:300]}")
+    return held(repo, tag)
 
 
 def main():
@@ -98,10 +114,7 @@ def main():
         for asset in f["assets"].values():
             tag, name = asset["url"].split(f"/{a.repo}/releases/download/", 1)[1].split("/", 1)
             if tag not in have:
-                try:
-                    have[tag] = held(a.repo, tag)
-                except subprocess.CalledProcessError:
-                    have[tag] = {}
+                have[tag] = listed(a.repo, tag)
             got = have[tag].get(name)
             if not got or got[0] != asset["size"] or got[1] not in (None, asset["sha256"]):
                 missing.append(f"{tag}/{name}")

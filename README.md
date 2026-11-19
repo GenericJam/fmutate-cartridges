@@ -16,8 +16,9 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
   version, source repository and pinned commit, licence, how it built (`clean`, `shims`, `patch`), the parity numbers
   and, per platform (`android-arm64-v8a`, `android-x86_64`, `android-armeabi-v7a`, `ios-device`, `ios-sim`), the asset
   URL, SHA-256, size and signature. Firmwares that were tried and not published are listed under `tried` with the reason.
-- **Assets**: GitHub Releases, one per run (`build-YYYYMMDD-<run>.<attempt>`; a run with more than 900 cartridges
-  continues in `...-2`, `...-3`: GitHub keeps at most 1000 assets in a release), each with that run's `pins.json`.
+- **Assets**: GitHub Releases, one per run (`build-YYYYMMDD-<run>`, its re-runs adding to it; a run with more than 900
+  cartridges continues in `...-2`, `...-3`: GitHub keeps at most 1000 assets in a release), each with that run's
+  `pins.json`; a cartridge's file name ends in the start of its SHA-256, so no file an index names is ever replaced.
   The index goes out only once every cartridge it names is in its release with its size and SHA-256
   (`pipeline/release.py`).
 - **Signatures**: Ed25519 over the exact bytes of `index.json` and of each asset, base64 (an asset's in its index

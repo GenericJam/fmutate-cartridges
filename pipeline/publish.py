@@ -14,7 +14,8 @@ the reason, so the next run doesn't build the same commit again. Firmwares not b
 from --prev, the published index (a file: the workflow reads the gh-pages branch's copy), whose signature (INDEX.sig)
 must verify against signing.pub.pem; --first is the one run with no index yet.
 
-Writes DIST/assets/<release>/libcart_<id>-<version>-<platform>.<so|a> and DIST/index.json + index.json.sig, signed
+Writes DIST/assets/<release>/libcart_<id>-<version>-<platform>-<sha256[:12]>.<so|a> (a name per content, so a re-run
+adding to a release never replaces a file an index names) and DIST/index.json + index.json.sig, signed
 with --key (Ed25519 PEM, `openssl genpkey -algorithm ed25519`) through openssl; each asset's signature is in its index
 entry ("sig"). A run's assets go to release TAG, then TAG-2, TAG-3 ... PER_RELEASE at a time (GitHub keeps at most
 1000 assets in a release); release.py uploads them. Asset URLs are
@@ -147,15 +148,15 @@ def main():
             continue
         assets = {}
         for platform, src in sorted(b["files"].items()):
-            name = re.sub(r"[^A-Za-z0-9._-]", "_", f"libcart_{fid}-{pin['version']}-{platform}{src.suffix}")
+            sha = hashlib.sha256(src.read_bytes()).hexdigest()
+            name = re.sub(r"[^A-Za-z0-9._-]", "_", f"libcart_{fid}-{pin['version']}-{platform}-{sha[:12]}{src.suffix}")
             release = a.tag if n_assets < PER_RELEASE else f"{a.tag}-{n_assets // PER_RELEASE + 1}"
             n_assets += 1
             dst = out / "assets" / release / name
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dst)
             assets[platform] = {"url": f"https://github.com/{a.repo}/releases/download/{release}/{name}",
-                                "sha256": hashlib.sha256(dst.read_bytes()).hexdigest(), "size": dst.stat().st_size,
-                                "sig": sign(a.key, dst) if a.key else ""}
+                                "sha256": sha, "size": dst.stat().st_size, "sig": sign(a.key, dst) if a.key else ""}
         tried.pop(fid, None)
         c = (v or {}).get("compare", {})
         old = entries.get(fid, {})
