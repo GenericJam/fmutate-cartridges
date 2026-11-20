@@ -25,6 +25,7 @@ import argparse
 import base64
 import hashlib
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -74,6 +75,24 @@ def load_prev(src, first):
     return json.loads(p.read_text())
 
 
+def finite(x):
+    """x with every non-finite number (NaN, Infinity: not JSON, which FMutate's decoder rightly refuses) as null"""
+    if isinstance(x, float) and not math.isfinite(x):
+        return None
+    if isinstance(x, dict):
+        return {k: finite(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [finite(v) for v in x]
+    return x
+
+
+def strict_json(text):
+    """text parsed as strict JSON (no NaN / Infinity), or SystemExit"""
+    def refuse(const):
+        raise SystemExit(f"publish: the index isn't strict JSON ({const})")
+    return json.loads(text, parse_constant=refuse)
+
+
 def own_file(path):
     return path.is_file() and not path.is_symlink()
 
@@ -113,7 +132,11 @@ def main():
     ap.add_argument("--key")
     ap.add_argument("--repo", default=REPO)
     ap.add_argument("--hub-updated")
+    ap.add_argument("--reindex", action="store_true",
+                    help="no builds: re-sign the published index as this publish.py writes it (with --prev)")
     a = ap.parse_args()
+    if a.reindex and not a.prev:
+        ap.error("--reindex needs --prev")
     if not a.first and not a.prev:
         ap.error("--prev INDEX or --first")
     pins = json.loads((HERE / "pins.json").read_text())
@@ -127,7 +150,7 @@ def main():
     today = date.today().isoformat()
 
     built = collect(Path(a.artifacts), pins)
-    if not built:
+    if not built and not a.reindex:
         raise SystemExit("publish: no firmware artifacts collected; refusing to write an empty index")
     n_assets = 0
 
@@ -173,10 +196,15 @@ def main():
         }
 
     index = {"schema": 1, "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "engine_abi": 1,
-             "hub_updated": a.hub_updated or prev.get("hub_updated"),
+             "hub_updated": (prev.get("hub_updated") if a.reindex else None) or a.hub_updated or prev.get("hub_updated"),
              "firmwares": [entries[k] for k in sorted(entries)], "tried": [tried[k] for k in sorted(tried)]}
+    text = json.dumps(finite(index), indent=1, allow_nan=False) + "\n"
+    if strict_json(text) != finite(index):
+        raise SystemExit("publish: the index doesn't round-trip through strict JSON")
+    if a.reindex and len(index["firmwares"]) != len(prev.get("firmwares", [])):
+        raise SystemExit("publish: --reindex changed the published firmwares")
     ip = out / "index.json"
-    ip.write_text(json.dumps(index, indent=1) + "\n")
+    ip.write_text(text)
     if a.key:
         (out / "index.json.sig").write_text(sign(a.key, ip) + "\n")
     n = {p: sum(1 for f in index["firmwares"] if p in f["assets"]) for p in PLATFORMS}

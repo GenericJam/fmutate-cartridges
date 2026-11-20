@@ -16,6 +16,10 @@ on:
         description: "Rebuild every firmware"
         type: boolean
         default: false
+      reindex:
+        description: "Build nothing: re-sign and republish the published index as publish.py writes it now"
+        type: boolean
+        default: false
   schedule:
     - cron: "23 5 * * *"
 
@@ -43,6 +47,7 @@ jobs:
       any: ${{ steps.plan.outputs.any }}
       hub_updated: ${{ steps.plan.outputs.hub_updated }}
       date: ${{ steps.plan.outputs.date }}
+      reindex: ${{ steps.plan.outputs.reindex }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
@@ -73,10 +78,13 @@ jobs:
         env:
           IDS: ${{ inputs.ids }}
           ALL: ${{ inputs.all }}
+          REINDEX: ${{ inputs.reindex }}
         run: |
           set -f
-          if [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all)
+          if [ "$REINDEX" = "true" ]; then ids="[]"
+          elif [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all)
           else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS); fi
+          echo "reindex=${REINDEX:-false}" >> "$GITHUB_OUTPUT"
           chunks=$(python3 -c 'import json, sys; ids = json.loads(sys.argv[1]); n = 150; print(json.dumps([{"n": i // n + 1, "ids": json.dumps(ids[i:i+n])} for i in range(0, len(ids), n)]))' "$ids")
           count=$(python3 -c 'import json, sys; print(len(json.loads(sys.argv[1])))' "$ids")
           echo "ids=$ids" >> "$GITHUB_OUTPUT"
@@ -177,7 +185,7 @@ jobs:
 
   publish:
     needs: [plan, engine, android, gate, ios]
-    if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && needs.gate.result == 'success' && needs.ios.result != 'cancelled'
+    if: always() && needs.plan.result == 'success' && (needs.plan.outputs.reindex == 'true' || (needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && needs.gate.result == 'success' && needs.ios.result != 'cancelled'))
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     permissions: { contents: write }
@@ -186,6 +194,7 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { name: pins, path: pipeline }
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.plan.outputs.reindex != 'true'
         with: { pattern: "cart-*", path: artifacts }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.12" }
@@ -200,11 +209,13 @@ jobs:
         env:
           SIGNING_KEY: ${{ secrets.CARTRIDGE_SIGNING_KEY }}
           HUB_UPDATED: ${{ needs.plan.outputs.hub_updated }}
+          REINDEX: ${{ needs.plan.outputs.reindex }}
           # (one tag per run, its re-runs too: release.py adds only what a release lacks, under names per content)
           TAG: build-${{ needs.plan.outputs.date }}-${{ github.run_number }}
         run: |
           mkdir -p artifacts
           if [ -f pages/index.json ]; then prev="--prev pages/index.json"; else prev="--first"; fi
+          [ "$REINDEX" = "true" ] && prev="$prev --reindex"
           umask 077
           key=$(mktemp)
           trap 'rm -f "$key"' EXIT

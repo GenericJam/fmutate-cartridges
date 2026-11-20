@@ -29,7 +29,9 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
 
 ## How a run works
 
-`.github/workflows/cartridges.yml` (daily at 05:23 UTC, or `workflow_dispatch` with `ids` / `all`):
+`.github/workflows/cartridges.yml` (daily at 05:23 UTC, or `workflow_dispatch` with `ids` / `all`, or `reindex`: build
+nothing, re-sign and republish the published index as `publish.py` writes it now). The index is strict JSON: a
+metric that isn't a finite number is `null`, and a check that has no number doesn't pass the gate.
 
 1. **plan**: reads the Hub's `catalog.json`, pins every firmware to a commit (`pipeline/pins.py`: a person's
    `overrides.json` pin for that version, else the Hub's build provenance, else its source ref, else the release tag,

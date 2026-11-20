@@ -279,7 +279,8 @@ def compare(n, e):
     # spectral similarity: correlation of the band levels where either has energy within 60 dB of its loudest band
     mask = (na > na.max() - 60) | (ea > ea.max() - 60)
     if mask.sum() >= 3 and n[0][k]["peak"] >= 64 and e[0][k]["peak"] >= 64:
-        out["spectrum_corr"] = round(float(np.corrcoef(na[mask], ea[mask])[0, 1]), 3)
+        r = float(np.corrcoef(na[mask], ea[mask])[0, 1])
+        out["spectrum_corr"] = round(r, 3) if np.isfinite(r) else None   # (a flat spectrum has no correlation)
     for s in ("boot", "chord", "play"):
         if s in n[2] and s in e[2]:
             out[f"screen_diff_{s}"] = round(float(np.abs(rgb(n[2][s]).astype(int) - rgb(e[2][s]).astype(int)).mean()), 1)
@@ -321,7 +322,7 @@ def main():
                 Image.fromarray(rgb(px)).save(vdir / f"{fid}.{tag}.{k}.png")
     except ImportError:
         pass
-    (vdir / f"{fid}.json").write_text(json.dumps(rep, indent=1) + "\n")
+    (vdir / f"{fid}.json").write_text(json.dumps(rep, indent=1, allow_nan=False) + "\n")
     c = rep.get("compare", {})
     print(f"{fid}: native {'ok' if n else 'FAILED'}"
           + (f" chord {n[0]['chord']['rms_db']} play {n[0]['play']['rms_db']} dB x{n[0]['speed_x']}" if n else "")

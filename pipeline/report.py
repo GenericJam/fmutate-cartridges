@@ -14,6 +14,7 @@ per-firmware patches; failed: the stage and the first error), and the check agai
 """
 import argparse
 import json
+import math
 import os
 import re
 from collections import Counter
@@ -52,18 +53,19 @@ def verdict(v, recipe=None):
         return "broken", why
     if not e:
         return "no-ref", ["emulator failed: " + v.get("emu_error", "")[:100]]
-    for s in ("boot", "chord", "play"):
-        if c.get(f"screen_diff_{s}", 0) > 12:
+    for s in ("boot", "chord", "play"):        # (fail closed: a NaN compares false every way)
+        if not c.get(f"screen_diff_{s}", 0) <= 12:
             why.append(f"screen {s} {c[f'screen_diff_{s}']}")
     if not n_sound:
         return ("silent" if not why else "diverges"), why or ["no sound from a chord or PLAY in either"]
     if not e_sound:
         return "no-ref", ["emulator silent in the chord and PLAY"] + why
     dl = c.get("level_diff_db", 99) - LEVEL_OFFSET_DB.get(recipe, 0.0)
-    if abs(dl) > 3:
+    if not abs(dl) <= 3:
         why.append(f"level {dl:+.1f} dB ({c.get('window')})")
-    if (c.get("spectrum_corr") or 0) < 0.9:
-        why.append(f"spectrum r={c.get('spectrum_corr')} ({c.get('window')})")
+    r = c.get("spectrum_corr")
+    if not (isinstance(r, (int, float)) and math.isfinite(r) and r >= 0.9):
+        why.append(f"spectrum r={r} ({c.get('window')})")
     return ("match" if not why else "diverges"), why
 
 def main():
@@ -100,7 +102,7 @@ def main():
         if bp.exists():
             row["bench"] = json.loads(bp.read_text())
         rows[fid] = row
-    (HERE / "results.json").write_text(json.dumps(rows, indent=1) + "\n")
+    (HERE / "results.json").write_text(json.dumps(rows, indent=1, allow_nan=False) + "\n")
 
     b = Counter(r["build"] for r in rows.values())
     ch = Counter(r.get("check") for r in rows.values() if r["build"] != "failed")
