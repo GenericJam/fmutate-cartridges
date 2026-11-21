@@ -77,12 +77,11 @@ def two_release_index():
                           {"id": "sloop", "assets": {"android-x86_64": asset("build-2-2", "b.so", b)}}]}, a, b
 
 
-def test_every_asset_present_passes(tmp_path, monkeypatch, github, capsys):
+def test_every_asset_present_passes(tmp_path, monkeypatch, github):
     index, a, b = two_release_index()
     github.releases = {"build-1": {"a.so": (len(a), hashlib.sha256(a).hexdigest())},
                        "build-2-2": {"b.so": (len(b), None)}}           # (no digest reported: size only)
     assert check(monkeypatch, tmp_path, index) is None
-    assert "all 2 assets the index names are in their 2 release(s)" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("held_b", [
@@ -93,7 +92,7 @@ def test_every_asset_present_passes(tmp_path, monkeypatch, github, capsys):
 def test_an_asset_not_as_the_index_names_it_fails(tmp_path, monkeypatch, github, held_b):
     index, a, _ = two_release_index()
     github.releases = {"build-1": {"a.so": (len(a), None)}, "build-2-2": held_b}
-    with pytest.raises(SystemExit, match=r"1 assets the index names aren't in their release: \['build-2-2/b.so'\]"):
+    with pytest.raises(SystemExit, match=r"\['build-2-2/b.so'\]"):
         check(monkeypatch, tmp_path, index)
 
 

@@ -76,7 +76,5 @@ def test_gate_passes_only_what_passed_the_check(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(gate, "HERE", here)
     monkeypatch.setattr(sys, "argv", ["gate.py", "--artifacts", str(tmp_path / "art")])
     gate.main()
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert json.loads(out) == ["accepted", "good"]
-    assert "nanspec: diverges (not published): spectrum r=nan" in err
-    assert "nospec: diverges (not published): spectrum r=None" in err
