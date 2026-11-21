@@ -67,6 +67,17 @@ python3 pipeline/report.py                 # everything built so far: pipeline/r
 
 `FM1_CATALOG_DIR` (default `work/`) and `FM1_ENGINE_DIR` (default `engine/`) move the work and engine directories.
 
+## Tests
+
+`tests/` checks the pipeline's own logic with pytest: the index is strict JSON, a run's assets split over releases
+and all checked present (GitHub faked), the plan and pin rules, signatures (with a throwaway key) and the parity gate.
+No builds, network or secrets; `.github/workflows/tests.yml` runs it on pushes to `main` and on pull requests.
+
+```sh
+pip install --require-hashes -r pipeline/requirements.txt -r pipeline/requirements-dev.txt
+python3 -m pytest tests
+```
+
 ## Adding a firmware
 
 A firmware on the Hub is picked up by the next daily run with no change here. When it doesn't build or doesn't match,
