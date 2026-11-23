@@ -1,8 +1,8 @@
 {
  "schema": 1,
- "generated": "2026-11-22T13:36:23Z",
+ "generated": "2026-11-23T17:07:27Z",
  "engine_abi": 1,
- "hub_updated": "2026-11-22 12:55 UTC",
+ "hub_updated": "2026-11-23 15:59 UTC",
  "firmwares": [
   {
    "id": "adrift",
@@ -842,9 +842,9 @@
   },
   {
    "id": "caravel",
-   "version": "1.1.0",
+   "version": "1.1.1",
    "repo": "bonszaimusic/caravel",
-   "commit": "75e6da10bba9690a1f71e42d5aa30240d2126482",
+   "commit": "2e527d5c2147d01974a2b75105a26e931a427635",
    "pin": "tag",
    "name": "Caravel",
    "license": "GPL-3.0",
@@ -859,37 +859,25 @@
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-21",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_caravel-1.1.0-android-arm64-v8a-1e4a19ba714e.so",
-     "sha256": "1e4a19ba714e0df6db95ce0f36199318f1425a17580f3b798fb78872e9f2e41c",
-     "size": 1249992,
-     "sig": "AfWjLuNXkXB++b5Miuw4jRDL7LIRt4701nC1CUy1qqv0GnWD0bKfx5nhUvzr71BtsKd0Aob67luubNR13RAQDw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_caravel-1.1.1-android-arm64-v8a-c8104d17861c.so",
+     "sha256": "c8104d17861c6b2e4811d0ded0089909902e2d660b448600dd6d77b3a8639d95",
+     "size": 1251464,
+     "sig": "Oc+tmNSdPp1qiSIKzTF+srObT42LhX0yWjpFdRi3H3PfJFbO42Lvn/AYHwpzq843FBc0MxhaEgQfov17f4xXAQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_caravel-1.1.0-android-armeabi-v7a-af5d8058f136.so",
-     "sha256": "af5d8058f136279d06ac0594d2b132056d888647cccaa4932b2dd3e53cfa4337",
-     "size": 1219160,
-     "sig": "hTkLZc2Bfe4fmwsXvxR8sr5iji2b+5addd2z1AFkOE0pI8RWP2HAsgrBU0xsIenY9CKJxTA3VWY2rjq7zOcdAQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_caravel-1.1.1-android-armeabi-v7a-93de7859d01f.so",
+     "sha256": "93de7859d01fb143b6757828a5a68b9f7892fd952f8ae0984722860258c68aac",
+     "size": 1220504,
+     "sig": "keMm3Vsv1S8zjtAYsCx6+6yQIjl/kSZABwAGO7Za5BpJjR2y9+9Hr8PB1VCCE7dP0Rio7dX8ZkZVtNpBSGZgCA=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_caravel-1.1.0-android-x86_64-ab9d79a94fb4.so",
-     "sha256": "ab9d79a94fb4d6779c30429cdfa149310b4d538778645184141fbad4a40c4993",
-     "size": 1332808,
-     "sig": "Ta8Xt4uSn0LQSlbgD0MwMtxx2FZJZ6TW+GO/gmFnG3jPraxRMWM0vx0zhpqEpi2Bm9RxPlrFZXpCcp1QPDv7AA=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_caravel-1.1.0-ios-device-ef33a914e66d.a",
-     "sha256": "ef33a914e66d896abd31f331a50ede86d3d2fd92abcde2596f68f58d2a4c8dc3",
-     "size": 1807464,
-     "sig": "8OIfyKLlK1gNrsuVdOuT2GXx8YjlJLW7mfXoLj40gDWGpMzz7OWF4EipwMxubER6B7oh1CiNPIN1v6MCG4abBg=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_caravel-1.1.0-ios-sim-3bbce6127e92.a",
-     "sha256": "3bbce6127e9236ab967f027411ac20b95c58af01ce58d4b33e2f3df5a93bd5da",
-     "size": 1843000,
-     "sig": "KAqHbr/0UAGYGD5iDgVoNSsR+u1ayM4Q1lzaZ7sww2/PL8Ek9sjzFHo5WRV5sBzJ6kroaqv3v/Ly2AzpFt9oDQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_caravel-1.1.1-android-x86_64-d8b83d5c028f.so",
+     "sha256": "d8b83d5c028f8de3fa546c53e2b95d01cb7f741dd6a816ace075bcc2a4b2d1fc",
+     "size": 1334120,
+     "sig": "ZXsatICR4ng7qhlgIRQAKsgodD7v4351h13RqFzN3i6r78Ppchk6cfPXF5ZKoRcG9xuM7wHR9ZTbsgxaoeOHCw=="
     }
    }
   },
@@ -1462,9 +1450,9 @@
   },
   {
    "id": "dabke",
-   "version": "0.18-beta",
+   "version": "0.19-beta",
    "repo": "wissamsader/dabke",
-   "commit": "b7ba61ba425cd42bd0dd20bed3d9e81f5390563a",
+   "commit": "497c51b7557df9005097337e8fcc0f5d64c850c4",
    "pin": "tag",
    "name": "DABKE",
    "license": "MPL-2.0",
@@ -1473,43 +1461,43 @@
    "patches": [],
    "parity": {
     "status": "match",
-    "level_diff_db": 0.1,
+    "level_diff_db": 0.0,
     "spectrum_corr": 1.0,
-    "screen_diff": 9.1,
+    "screen_diff": 7.8,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dabke-0.18-beta-android-arm64-v8a.so",
-     "sha256": "0883a01d8d0cf267ebb34d0cb038e03d306a950a3b80f607c078aa0d04a343ca",
-     "size": 584056,
-     "sig": "TsTai6+peqKPfPjvwYs8NpTayEfQ/vCS1hwEoFiqZpGUxuG9+R64I+qbGAoBgIJvNRUOlkA26jW1PUlBpV46BQ=="
-    },
-    "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dabke-0.18-beta-android-x86_64.so",
-     "sha256": "f5eb2d7eb4a02aa5cd94bbec2f26237357f9890ce54c0fba51e7f226dcf1c6f8",
-     "size": 643664,
-     "sig": "k2OcVFWJh0JDKYHKSRlrODSQVD5kfWi4VvtekWKJfJBDNHtDbcDq4tjUZD8ZG16r7z2lC+ab5EFEKj25wN+ADA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dabke-0.19-beta-android-arm64-v8a-0cb6d270520f.so",
+     "sha256": "0cb6d270520faead69f118610beef0607526d38545aa9043c04519218e26d6b2",
+     "size": 592144,
+     "sig": "yRxOiS4d8NGNz+TrY2hqg4vqp3aBrkrveYGbMmvyciqKR2n75FojCCnjzoSBv9Py2hDDFvYVi+kz+m+YpE1fAw=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dabke-0.18-beta-android-armeabi-v7a.so",
-     "sha256": "6980ef8bbeec84c5c6e2e6d723efcc184afe6c12530df8d64ee5316e0d7c1c95",
-     "size": 572232,
-     "sig": "JRqIGrHDU43KGeaGgKPsWq9dITCDKB81tTSCGRTD5vNG7wchGIiG9GqIQ+GFIkfnxKhEQnmuX+AkW6cOjeCdAw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dabke-0.19-beta-android-armeabi-v7a-9d29789ba5bd.so",
+     "sha256": "9d29789ba5bd1e798dcc5c8f9c87b25d58741f81287db8d732902348e062df48",
+     "size": 580048,
+     "sig": "0DCjHa3ZnFWLZqfnHh/HkDNAs7KieBJgCbfURpxdvgOT2kJwtqnNTztbo+b5MrAWXoEbcWefYIlkCmL5KGjkCA=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dabke-0.19-beta-android-x86_64-734d62bc0e1e.so",
+     "sha256": "734d62bc0e1e4d20e2c7b388ed785b6af954e7833a9181153347ad0bd61f0f9b",
+     "size": 651464,
+     "sig": "Xn/j832JS2N0LNzT1jrMMYBEM4igmekkqJWmvshUIi9OGv9BOkEW+sPAHn5gG8qJD57IElGh2qXrh5xKmMAZDw=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dabke-0.18-beta-ios-device.a",
-     "sha256": "6bfeeea3bf9431a52342d709d6487f803982a15faef7a02be3276ee790045c7b",
-     "size": 771632,
-     "sig": "GPJQDCjJUB/XEgHzgpP+o03/dLLVush6Eqr9U0gJCoQtI+lcUSwjj0AdB4ARr1g9DVW8aAjGzgpvhH+6aTIzAA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dabke-0.19-beta-ios-device-59502eeef565.a",
+     "sha256": "59502eeef565c20701aba8d9b90e0c37558cbf1b560740619c9d5e6c2a8c6c79",
+     "size": 782576,
+     "sig": "JHQvSEv5zDvh/9szxs3pN8Atp080KXFxg/2rvUvVr2aEO7SHtDwVHle7AKgv8F2nRISQldqGO9ipVMYC5uiiCA=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dabke-0.18-beta-ios-sim.a",
-     "sha256": "a9e5bae4066424bd1ba9ce83aaff8ff5d0519f2374f534bdd244f9cff875ac10",
-     "size": 773144,
-     "sig": "t+OXo7azF5RuI9AQ43oLWXsEtJSLYQ6brk6JBYW+s05K4J6OUVSQhra6VnOmZ/ZKw8OYoixmk7bF5bxSDQu3Dg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dabke-0.19-beta-ios-sim-814da18551ac.a",
+     "sha256": "814da18551ac69648ae6ba67196a0b8d011de2128c51d4a0165bca5488d65b9b",
+     "size": 783440,
+     "sig": "8GWKB+4nItKkMUBjbTwoQZiFSy9pdTPuDw8G2PlMGYbmV3USsekb/R0JrCd/+iC+FTub1/IMlzFq/bL1nZWhCA=="
     }
    }
   },
@@ -1833,9 +1821,9 @@
   },
   {
    "id": "dub",
-   "version": "1.4.3",
+   "version": "1.4.4",
    "repo": "sbegueria/fm1-dub",
-   "commit": "e89138a3de7d11f97c941ef467d166eb0763d160",
+   "commit": "b991f5be13d872b9b1011dde181b230c4a43240f",
    "pin": "tag",
    "name": "DUB-1",
    "license": "GPL-3.0",
@@ -1846,49 +1834,49 @@
     "status": "match",
     "level_diff_db": -1.2,
     "spectrum_corr": 0.98,
-    "screen_diff": 7.6,
+    "screen_diff": 6.8,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dub-1.4.3-android-arm64-v8a.so",
-     "sha256": "d5d0ebe5f78f0cd67eb3946811fa2383497a4dc445f09efba0bdbb7341411777",
-     "size": 656432,
-     "sig": "808VB+TgGUI/lPvP1hqyaXP6CxOK5w3cM3BcUbf68Pa4CzRzbhFFphJHEf8e3A+cP3yVMY4OxApGvuRQDkJoCA=="
-    },
-    "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dub-1.4.3-android-x86_64.so",
-     "sha256": "c6b3ae6002fdbaea17871b5c9c939729d66386d41ffcbe3bb660fdda9019119a",
-     "size": 710216,
-     "sig": "rpS6v220El6DXgTyxJ8Sef3/sb1+uIcVOZdJv8rTGL44wl4ENoggymZIfBdrPOG4ziVTjBGub7ErcrIepfwWBw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dub-1.4.4-android-arm64-v8a-5013fa4cc132.so",
+     "sha256": "5013fa4cc132a2fbf9b154c5712ac535adaf46c6318ba53520bcf012cc26aec2",
+     "size": 658464,
+     "sig": "1Xf8+9tmWcHdMnI3MPhsn1dfuGPFSIg0AWWfYdqfL+ukEJ22Nxdw+5KwP59GkIXL9tty/DRNexCHeCfH84HcAQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dub-1.4.3-android-armeabi-v7a.so",
-     "sha256": "81c24547c697bfdc5b4eeb405d5428fabbb9a1738f56bd90aa7257958c608a4a",
-     "size": 650300,
-     "sig": "D9LybwEQWfqXxmN0s4BK0YuVLUO+BVfMVuFKtQltKwHeA2t2+oZVwHFtx04UlzVTwutGP18rXUa+Jg8moJhzBw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dub-1.4.4-android-armeabi-v7a-92b45756a5f5.so",
+     "sha256": "92b45756a5f554f234e36360a3c9f14977e7f694c5dfa000d099d11a24b1438c",
+     "size": 652188,
+     "sig": "H27O4RkkaCv7BXjBG+zIAXZ4rnyNF82OzO5A7tD3h2oTCrP36MEtTd4suuCz6vdPS+iHQBfW3i57fM5+sEEMAw=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dub-1.4.4-android-x86_64-91e1f4c0f284.so",
+     "sha256": "91e1f4c0f284c688492af56c3af03c5878d1e8e5e54623fd200e778f71e68e40",
+     "size": 712616,
+     "sig": "kBBKMbq4+GwZ0cA5qDC/6Htc8d8jVE6wIlJMFEaKjTr97RKQMgCx8e35noytvyEUOCKhZl2BwnO5EiPx1rZNBg=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dub-1.4.3-ios-device.a",
-     "sha256": "28a9c17488c7ce354236e820967ab41491a8b2dc9cc4449d121720a41513ed71",
-     "size": 848168,
-     "sig": "P1F9KVwWEKNpnlCW7+mZNYOnzO2OSUa7DngeSJDaeFXf0Pl1nDdNskv0Dov09QalH+F0D09dl4svJ89yDmZjAg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dub-1.4.4-ios-device-e63133f52202.a",
+     "sha256": "e63133f52202afedf3303d7de86ac4c6a18439fad87c75288645d0235a9e2071",
+     "size": 849832,
+     "sig": "RIFnb4NyY+MWyYVjSA0b9PcY1eB26jb6ttSio8/7nqLIVRZDb9Q7l0ejuKBxXMc1BXamDh+X4uQLOCy33rlWCg=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dub-1.4.3-ios-sim.a",
-     "sha256": "17ba2c7f9d26906077a754b035f47910cafac3ee179ba3a34face086ee1821d0",
-     "size": 849456,
-     "sig": "1Xd92K7gx9tFaOxlcsG43rXDLkCRkL2+QITQLw1RbSoXvDctgRWNzRilnhsLY8oWxeOytgrin9qjvh1O52PIBw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_dub-1.4.4-ios-sim-df0c25c83a63.a",
+     "sha256": "df0c25c83a6389fb5b3c4f3a4c1a69a47dda88531053e20fba42ef62d1a639dc",
+     "size": 851120,
+     "sig": "yHa892mAu8im9zUUSt/8o8V83O1Rqla7ele/0MaSKK73dTcLlnDOZqzTgDIJVl2ekiF0WXOIRqCUfeK2+uHcAw=="
     }
    }
   },
   {
    "id": "duell",
-   "version": "1.3.6",
+   "version": "1.3.7",
    "repo": "oscillr/DUELL",
-   "commit": "478864b88cd3cc7522a49d7528854f686b4884e4",
+   "commit": "96af26382d39067ba5b0155dda10f79fae5ef139",
    "pin": "provenance",
    "name": "DUELL",
    "license": "GPL-3.0",
@@ -1899,41 +1887,29 @@
     "status": "match",
     "level_diff_db": 0.9,
     "spectrum_corr": 0.992,
-    "screen_diff": 11.4,
+    "screen_diff": 10.9,
     "notes": ""
    },
    "added": "2026-11-20",
-   "updated": "2026-11-21",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_duell-1.3.6-android-arm64-v8a-d116220c1c5e.so",
-     "sha256": "d116220c1c5e4f85a33d2f5352278c645d82d61f545e2c8486ee22e2caab9a82",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_duell-1.3.7-android-arm64-v8a-0bafd388e460.so",
+     "sha256": "0bafd388e46068b5475eccfd154cb8d2747c5c257530ae5a4e6d90ec7facb1ab",
      "size": 1272808,
-     "sig": "SW2y0X5t7WrUyZyaW7rK8cj0dxiIHPqXQ31c/BL0XTuUvd3NZ9K0Kh6ayr7wjv86fOmWEzY7j8wQy4mYGnj8Cg=="
+     "sig": "uJXlK6Vl9L9ZYzxW7WPU0ecYNHHkPzb9ujG6uYx3mXyFwIRldKn1nPGb36c3l0UVTfoc6zOtA93IEdrxAW1bBg=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_duell-1.3.6-android-armeabi-v7a-c22f5c50ddb3.so",
-     "sha256": "c22f5c50ddb30c65a609347c0e4cbafab81aba0257b4fb9e1f488c5c492ef170",
-     "size": 1278544,
-     "sig": "kV+bpi40D9ElY5Vganr8q000XF1sqMrGdju6aPtGK33LWx8Av4PufHVHK2rVo+7kMv4MKAV/J1ST6b24fxTuAg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_duell-1.3.7-android-armeabi-v7a-779eaf34049a.so",
+     "sha256": "779eaf34049af7240db14f8a886eabeefc589707f86f40ab55eae5d71171a78d",
+     "size": 1278560,
+     "sig": "4uiKZSAAnr4ActP44tIs9aVRwdGrYmj3xIOm3sx3dhEhKjO+CFMlN+eAF8VtKsgZ3XhzHzc0Hf0StkJOtSAhAw=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_duell-1.3.6-android-x86_64-8ee760ac5e55.so",
-     "sha256": "8ee760ac5e55dee7c68f4f4902b5116a9787b6c9eaca5a637c1c086db269bd37",
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_duell-1.3.7-android-x86_64-c0f980f5a0ef.so",
+     "sha256": "c0f980f5a0ef3f48611b4780fa90c267da3538ef678424bf91e12dbc801b2c12",
      "size": 1410840,
-     "sig": "7HqHrZGgbklnvPFsn+e+6qrqFycFW7QiQpruoXj6Pi+OHLdMh+q76uWfVopkh0FYX75oDBxF/4WyqkKYv+18DA=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_duell-1.3.6-ios-device-5e0c02d4f94f.a",
-     "sha256": "5e0c02d4f94faad84d75200b60e9a3a86c21db2c9c20ac603be9445ddb9ebcaa",
-     "size": 1715112,
-     "sig": "NLWyGYxsP3FD6rhHTg2Cb32iYFvUL1ZOFObkHM5tjnJfWj4xVsf7M0PGG7DLXce4Lr0xowjmJl5wZnbWOB5pAg=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_duell-1.3.6-ios-sim-2240c4db5070.a",
-     "sha256": "2240c4db50701beaa6d90d5f9ff2220ace489bfe3c3fa6b9d7b5acc4436eb912",
-     "size": 1733896,
-     "sig": "oRJ79UUEH5AtlFC4lc4tlXPC9N/R34vQJECKxtI36g1CCP/mlOpunRrc6Z3Gdw1mCQDsH7oEcvzauXIillWVCw=="
+     "sig": "h4xlN2LEwk+r5nzE3wpl+tb24DkTd/iKHZc8EnTNpNUzcWBBDFyZPz57sFcF5jmgvh3DEpc5D57EomHN8icxDg=="
     }
    }
   },
@@ -2203,10 +2179,63 @@
    }
   },
   {
+   "id": "felucca",
+   "version": "1.8.3",
+   "repo": "hugelton/Felucca",
+   "commit": "389ab2b6a846121fef64dbff28dd05357e82aa52",
+   "pin": "tag",
+   "name": "Felucca",
+   "license": "GPL-3.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.0,
+    "spectrum_corr": 1.0,
+    "screen_diff": 1.7,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_felucca-1.8.3-android-arm64-v8a-2581ee526f8d.so",
+     "sha256": "2581ee526f8d1e3209285e43f77a58d75a7282c7ab1b723fa09839182994d6c3",
+     "size": 1062560,
+     "sig": "HP0UdVSwaOpb2oi6FeBhypXMWjv6qZg8D5fUfwfWl+cekmslMrP6FD02zA+gdCvV6ccJlhVE0jYstC/Hyx/rBQ=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_felucca-1.8.3-android-armeabi-v7a-f7a9144c61aa.so",
+     "sha256": "f7a9144c61aa72fd4583857a9beb30f4f9a3762c248c3df53afe2cb1295742b3",
+     "size": 1031508,
+     "sig": "n80Ng4ArdAkxhSiNdhP7ia39xIZLR/XgetO2oVu+JU25QVYVUy+XmRHVMwK4IS25N9CYFFlYkGQ97tEwUIhdCQ=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_felucca-1.8.3-android-x86_64-fef1f753c695.so",
+     "sha256": "fef1f753c695294cc6a82dea936d14ae65c15c9917e5ea7bbb6cc1cde24d0683",
+     "size": 1149432,
+     "sig": "OAWDwsfzKJs+6MeyXL97LeTq9quOopjmEvkiU8YbGh957sRd3WGBX8bjOwczkkPIdId8xqIVHVb3nZUmWPQJBw=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_felucca-1.8.3-ios-device-a52dae76d65d.a",
+     "sha256": "a52dae76d65d19e70a886f9d23456e968a66136b216b37df704045e2229ae868",
+     "size": 1390608,
+     "sig": "ML51OfuI1fn3ReBDEerS2Q8aWBdHHp+RNYokISPlt6wCUwpTCrrFCkxzietECjSo+jR8HwaxMHawPmKZvNdtBw=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_felucca-1.8.3-ios-sim-7a3ce0021b51.a",
+     "sha256": "7a3ce0021b51b5504e3dc40da1fbe040a74d59b3a4cad520fed601fac35e6816",
+     "size": 1403208,
+     "sig": "q0z3kamYhDskvCwgd9XP6GWvywqtl3cPU76JVo9UzW+txWGoy13lCpH0TH1htTToR5Cdy5FJ+zeic6PTBSxjDg=="
+    }
+   }
+  },
+  {
    "id": "fernbedienung",
-   "version": "1.1",
+   "version": "1.2",
    "repo": "DPangerl/fernbedienung",
-   "commit": "47c43ee61b6226d7577b24e7a4577e28ef97365f",
+   "commit": "d8388635ea29c394cb033acaca793eff526f16f4",
    "pin": "tag",
    "name": "Fernbedienung",
    "license": "GPL-3.0",
@@ -2221,37 +2250,25 @@
     "notes": "no sound from a chord or PLAY in either"
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_fernbedienung-1.1-android-arm64-v8a.so",
-     "sha256": "0c3c17ba0a1b3ee633bfa764963a09d2021691e05d4d604d84816b8bf2707f36",
-     "size": 202480,
-     "sig": "R6aJ1UT6nljEym/ALrMrLgYAZsEw08oXPAB0WiGkdAJ7FMe+0r3XujFmJ1kByhjhbMCf9+GpYMBTBjz8mQg5CQ=="
-    },
-    "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_fernbedienung-1.1-android-x86_64.so",
-     "sha256": "315d9751676422ef9f97ab4d810c30d6db5458db06c8c74fe79767dac49d464f",
-     "size": 224640,
-     "sig": "tLm882Lre5B+Td2FAF34LpeXj8E31q7FCqvsB05zopeccwOxCrApskPzO3BohdrBRIk3I6/4Qj5+mTQjnhT4Dg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fernbedienung-1.2-android-arm64-v8a-a1ebaa509a33.so",
+     "sha256": "a1ebaa509a33f44b655b8525c60d480652b23eb365550cdf17de917840855ea1",
+     "size": 296712,
+     "sig": "NG1rWwDHnl4GjMFE2Nd9rjccpMePvTM0XM+sOfgNC7wESeKwySCAdvBYJy2mOxSVb8YQVMuA217q6zWM/mQDDQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_fernbedienung-1.1-android-armeabi-v7a.so",
-     "sha256": "3a278658acd6e00c1b6c82f064e3bdca8fd517c37d654b6fa51f70cc29b40aa4",
-     "size": 211356,
-     "sig": "BC4s5/v2euAteO5rjfoZfilbWdn3LFcxGglWtesRQ2msLTuXRcYFQKm+jWNqi++lXY0geosE8hF4L5O1R8T6AA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fernbedienung-1.2-android-armeabi-v7a-2cae62670326.so",
+     "sha256": "2cae6267032627fbaae1c0195de348da6748578c2f287759ee34846162065ed0",
+     "size": 309452,
+     "sig": "Xe2hm/n15bd7mhKY8WYJP9wssGHtYBoPWUhxnV5+GEtlUTGNxGUlVEizsYKcdNOmDXjna7eHlGVYPzibnlDXAQ=="
     },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_fernbedienung-1.1-ios-device.a",
-     "sha256": "668ca003064887f01ee928edd38288adf82d66952af472ca322e824ad73e8b20",
-     "size": 252896,
-     "sig": "NxqrKKYaF7xvDO1MNflZc5bAPLvryzx1FvjFU8hbJY5P3+fr5qaBXJgm1VxFlXQO6PQZj0j9SiSJYhrqn5o+BA=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_fernbedienung-1.1-ios-sim.a",
-     "sha256": "b96110aec08bc9c6ee54ef91707d6299696fca4b647481cf8fa88ad7253bd9bc",
-     "size": 254448,
-     "sig": "TPrxgAgFL2JUjNhJW8XwGTkC/34TC6thpl6vgkkfsK3fw7XGkTv0WDtaGWiVkqYZhjuLXO60dpROYSlfQqPXCA=="
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fernbedienung-1.2-android-x86_64-3441ad05a560.so",
+     "sha256": "3441ad05a560479338960d9d3d5dad9b3f2fb8c63d9c5480d983eaf328f65710",
+     "size": 339464,
+     "sig": "IGnYscq6YOfYoEVt7WPTX9SHqTLrId78JkOFNIIUxDZcbJAtEV0jdJ9+GWy24seV2qmlc5Y2MjWdIvTuZy3HCA=="
     }
    }
   },
@@ -2346,6 +2363,59 @@
      "sha256": "98a92283d42130b06ea3cc6f7c8788eff47db1e1fb8c0b3e2b5df79446468331",
      "size": 1698592,
      "sig": "r3Zdv7UdN5JHjvdZwICoSW6wlEfKpjUqYERUurcYgwnd+3UI2vezmxyj72SzMI2PdcRk/AiPGFUFUktFvav2DA=="
+    }
+   }
+  },
+  {
+   "id": "flat20",
+   "version": "0.3.2",
+   "repo": "thenewwazoo/FLAT-20",
+   "commit": "0a843bd27d2998bf2a2a97f10560a5487865bf6f",
+   "pin": "tag",
+   "name": "FLAT-20",
+   "license": "GPL-3.0",
+   "recipe": "dinghy",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "silent",
+    "level_diff_db": 1.5,
+    "spectrum_corr": null,
+    "screen_diff": 3.2,
+    "notes": "no sound from a chord or PLAY in either"
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_flat20-0.3.2-android-arm64-v8a-ee3d0341127c.so",
+     "sha256": "ee3d0341127c67d5ebb2e198b02109422acc1c09ce78944d407a0541d3f7abe6",
+     "size": 98944,
+     "sig": "YB4Vw+xqUUtwdN9kmnu1GgioWCpADwTnBzJZhvu4jx8kLVpSSE6GFa78NbTH4a5d0gqBtQj7GmEQVRQHfChbAw=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_flat20-0.3.2-android-armeabi-v7a-036437c5067f.so",
+     "sha256": "036437c5067f83cfc7bbd670488d8ac255f8174afd7089f7fb06a898f358d229",
+     "size": 97080,
+     "sig": "fFtM5yEoTFTfq8lsl6o5VZSJbReHC+P0JLo8SY0sHtZswhgdLBU+3f0+iMSreP88+n+tOrkFcaQRI0Me4M9LBA=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_flat20-0.3.2-android-x86_64-826fbcfc1fad.so",
+     "sha256": "826fbcfc1fadf4c75450107be6df151398acbc385077539a2a84f295d903c0f4",
+     "size": 121672,
+     "sig": "JKuie8Om7GT06IqGzaUA8UxQxswQPTv4AHD8YpbvHrYTYpCXbeI7MYONTXhixM/RnI9uKDC8TX4dGixo0uKcBw=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_flat20-0.3.2-ios-device-2c032c9aa1f8.a",
+     "sha256": "2c032c9aa1f8e5ae408b6476290053a4570db2547121d535e716a4c5127a58ce",
+     "size": 121152,
+     "sig": "E3F0sQRVb3Bt4AVvIUW+/VDUX+Rs5cZcXAFitzyjQ/zTiTFoSLTRMl+eZYVny955h3ay64tVqLMtkPuIBPtfBQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_flat20-0.3.2-ios-sim-81537fc0b70a.a",
+     "sha256": "81537fc0b70a91b386545bc078136c64c71e0e91514cc1d905c066d10bc6d9f8",
+     "size": 121816,
+     "sig": "DdJ0t/JctHQoqtVoRaRXx/qDkYnKwLjfPxuDDnBvcO9m3ka2KILH0seSXiiqY4+zA9CoPOxKZKwko4jtOQtgAg=="
     }
    }
   },
@@ -2567,9 +2637,9 @@
   },
   {
    "id": "fm1tonic",
-   "version": "1.8a",
+   "version": "1.8c",
    "repo": "luigirossi-music/fm1-tonic",
-   "commit": "f13192be944057ea436a80efc2395e64738ddbaf",
+   "commit": "6713dc8e20dbdb9cee34956bcd4bd09d0fcc48ad",
    "pin": "tag",
    "name": "FM1 TONIC",
    "license": "GPL-3.0",
@@ -2578,43 +2648,31 @@
    "patches": [],
    "parity": {
     "status": "match",
-    "level_diff_db": 0.0,
-    "spectrum_corr": 0.999,
-    "screen_diff": 0.8,
+    "level_diff_db": 0.1,
+    "spectrum_corr": 0.998,
+    "screen_diff": 0.9,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-22",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_fm1tonic-1.8a-android-arm64-v8a-4db9d3643b10.so",
-     "sha256": "4db9d3643b100a020a76334801d3d8c9a56fd673b5af71f6be30f5acec8f134a",
-     "size": 866208,
-     "sig": "Q54u4fJ/3v2wcAUU+XyfqUPNOoelO71t5uXxBKFpek0banyY6Or8dqfPC9XAtabRActTJ4D7+HSx8fCenKz9Dw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fm1tonic-1.8c-android-arm64-v8a-a70b3b210bbe.so",
+     "sha256": "a70b3b210bbe85cc4c26a6ebf9509c415b025d094d0ac35dc81bd714228ca198",
+     "size": 878272,
+     "sig": "655YYs6mN5Zba7mmh/qfN0zf+ZO7OnOjxkym/ooC+Tf0P5Hp/HVR7JckFaeyUOAip/1AV1tduUriEMYEuEkSDg=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_fm1tonic-1.8a-android-armeabi-v7a-216a313199cf.so",
-     "sha256": "216a313199cfec6a52c95bbc0c7f7c5d6a8a428564996982e8e22ae81d20bdf8",
-     "size": 858240,
-     "sig": "ntMJFlbRj/DIRvN5/E3w4CPlOht7PYKLaEa9mKpNDgOgN2QHjpKypCaihGMnQ81U2N0PPZjLgaFMLRTl3vSXBA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fm1tonic-1.8c-android-armeabi-v7a-f69283b2bb20.so",
+     "sha256": "f69283b2bb204d19a5fc0bded0f61edb21f07319a54797ec0b4504189dabef26",
+     "size": 870088,
+     "sig": "18BAUa88aKa17zRQLp4pr3U3Zl7PpAC3lnIn87SRKL22+zjpW2VflHNCTdm73G7pz7T+lWUDzXHl8Tq6myZjAw=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_fm1tonic-1.8a-android-x86_64-fb717a9e3f8c.so",
-     "sha256": "fb717a9e3f8ce91a2533edc9ec6a5146e7b72a1363dfe332f17028d95fc54503",
-     "size": 907640,
-     "sig": "9ZnmSAMjx/UTa9qX3HiHERRLQvlrEvZITtHXdbEEFD5fQZADxQNV2Lf6gaClLsKzSCdrEZt1ucKil/RLI9y8Cg=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_fm1tonic-1.8a-ios-device-b0063b2ea70b.a",
-     "sha256": "b0063b2ea70bc0672d4e304a7ed8974fab6bbef1d1b1ee317dfa665e9887d126",
-     "size": 1077856,
-     "sig": "5IJoRzYhxxCH5X7Pu+76nOWfpVI7sAy+UjslbQG2OXdtOwyRLog3jjcOBaSH6doybNger2cPkOkYgE9dgWlqDw=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_fm1tonic-1.8a-ios-sim-8f11e0b80e97.a",
-     "sha256": "8f11e0b80e97b9f9386f1df17aba72dc6606569e1c008283bf89dbfed7cad5e2",
-     "size": 1080080,
-     "sig": "U32l4eDkBi9YX/t3/Wq2+Jn7g0M4xo42I9nGMyiWv4jfxN6VJQ3b0wPKqecVksOyXs7exUTK6qZudR/JIT1LDQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fm1tonic-1.8c-android-x86_64-b88a834d9489.so",
+     "sha256": "b88a834d948946a42a3cc6418c14a848123844386b4df4e660d86e6d14f7af08",
+     "size": 922120,
+     "sig": "t3FrnKbtIH6Q69M9PdMuiJc+dwjdmdApj2GaNEa+bEEuT/87W1Q9T/ph7lbhq3POgSnS9dg5UrU+rpJQU85sAA=="
     }
    }
   },
@@ -3251,6 +3309,59 @@
      "sha256": "9547bf713a724da71c89add09fde1de4c8e789fdd411372b68feb20282070b9f",
      "size": 1418984,
      "sig": "hIYEqVMPuQJh8l+ZtPAKGQVVEPymhj0KGFw7eky81z3+G6kGVQr8bPAxZMKpoVD+ke8nY/1OcckCxEVHUGo5Aw=="
+    }
+   }
+  },
+  {
+   "id": "gio",
+   "version": "0.3.1-beta",
+   "repo": "GuinanNo1/fm1-gio",
+   "commit": "12c50b4411c7ca6fc0added1f4dea9fc15d96b13",
+   "pin": "provenance",
+   "name": "GIO-1",
+   "license": "MPL-2.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.5,
+    "spectrum_corr": 0.933,
+    "screen_diff": 0.8,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_gio-0.3.1-beta-android-arm64-v8a-361c2404bd78.so",
+     "sha256": "361c2404bd787db2b1456b7b801a27879550affb6fa17955072ae5519a302de4",
+     "size": 349920,
+     "sig": "CeYMk1A0G0Ybtwp5Syrw/kVHIm/xFxCDgoJ8a7Jvn2l1jTK/RBXaWevV4WA4t8tST3nr+Nzfc69/smeZGRO9Cg=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_gio-0.3.1-beta-android-armeabi-v7a-fd7e6a964fc5.so",
+     "sha256": "fd7e6a964fc593d27bcd4073720c3cefccf6e124bdfbccef56137bbc669579cd",
+     "size": 341596,
+     "sig": "Mf7TAEY7KX+F6Qsh8tRkxBRxZuHjSGWBLzKUyLEteBdQIZFOL+urK5dM/m0f2tHigYK+oTIPm+AYHByKRVNIDQ=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_gio-0.3.1-beta-android-x86_64-2e74f32cdd8e.so",
+     "sha256": "2e74f32cdd8e7b382fd2c1050a162a0574e9f595c9eb82fd48a5c87b2d842947",
+     "size": 364784,
+     "sig": "71yhAdU9NuwoiXKhCl2O2boGLhKBo04LSiEs5Ett0LdOphaynArLIMKOrCbgo1kXEspg9k5fKJLaPWn7ByocDQ=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_gio-0.3.1-beta-ios-device-cd869e7cff23.a",
+     "sha256": "cd869e7cff230443f0734d2b286ad67414fd0c2dda8ed9992e40f26eca13b80e",
+     "size": 434952,
+     "sig": "kyt3Ghs4met/izIGg+PX+D7sBVjKM79ANjSO+mrdX3H3LxR4dTmR5PVkua7M94GV+c2NKh/OZRgiBt9v2GfUAg=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_gio-0.3.1-beta-ios-sim-46ab291f6577.a",
+     "sha256": "46ab291f65775b1ea3ed3d47e074d314b67f53af9b040d0a25645b9b4b406a12",
+     "size": 435416,
+     "sig": "MdDlEQbEXDbTkbevF9cbnLW05eISPgV2vWkL/Hbp8lbc6/J42qvCKwGV4cD1axI/jGzRFHTEoI8irMWu4fGgCw=="
     }
    }
   },
@@ -4053,9 +4164,9 @@
   },
   {
    "id": "loom",
-   "version": "0.17.1",
+   "version": "0.18.2",
    "repo": "charlesvestal/fm1-loom",
-   "commit": "b164205806acfb27d8c44fafd6481ac61e38c077",
+   "commit": "7f774c4e24527563ef808ccd0d9cb5c2fe55cec1",
    "pin": "provenance",
    "name": "LOOM-8",
    "license": "MPL-2.0",
@@ -4070,37 +4181,37 @@
     "notes": "no sound from a chord or PLAY in either"
    },
    "added": "2026-11-19",
-   "updated": "2026-11-21",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_loom-0.17.1-android-arm64-v8a-2953fdf25505.so",
-     "sha256": "2953fdf2550540a33ed82e961b51557bfeb9dd91059651528aeb2a3a96ffe31d",
-     "size": 1438216,
-     "sig": "dtH5bc8I2zFYmbhY+GFFQ7eowobtw0BvqVjiNW3MK+zIALKQLLcG2XvTRXLRqYQPqUnZ5omYfy5c1tRGz1RMBA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_loom-0.18.2-android-arm64-v8a-7e9ef4d48ab1.so",
+     "sha256": "7e9ef4d48ab11d6b0120668f1a091f1df3d4249be813d5cb6dd8c524f334193a",
+     "size": 1452440,
+     "sig": "jLV43te1Iy8Ie5OR8aLqHAf+lUWo6eevZf3eDkfaIj27GgljdcbRjtl7qMUE64mwmZjzhlMyED259Y0oR3N/DQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_loom-0.17.1-android-armeabi-v7a-077e93f4c393.so",
-     "sha256": "077e93f4c393066d654100c3c71b0bc08b696a01872cdb7f4467eb1f96e34802",
-     "size": 1397064,
-     "sig": "dLRbnWUz4ejTApDnx9S0kVseeBmvEKXt3PRT7duSBu8HQjKMTHlC4LsArYqeQUowFZvJ7VABrtFfECC9JMWCCQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_loom-0.18.2-android-armeabi-v7a-c90778c372a9.so",
+     "sha256": "c90778c372a930d48bfbcd565c52ec6c6e172de0841b279396db52bd034ac160",
+     "size": 1409792,
+     "sig": "OyUndLoMwHxQz3GN8l8IIv6vX+idT7wh7W0KnJ5Oi15IX2/5ZjHQ/+MCgOGTCtL0yGnynFl2Jk1edzcqUXw6BA=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_loom-0.17.1-android-x86_64-c014436b9d37.so",
-     "sha256": "c014436b9d3720e60d077ad4aa7e5a59b69a8fe865397dc9374685b729a6d41e",
-     "size": 1533576,
-     "sig": "rX5jdoWmBz3Jns0ftEVhDoaT+BxZBRsGkViEUVlpicLJT0qJ6FNJSB0uWhBfaNVUuOuGoBXyXWpCtjd9+c1VDg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_loom-0.18.2-android-x86_64-66fb86b64918.so",
+     "sha256": "66fb86b64918a7574517a0d293059e1220efd9fb4c846a082afba5f0d977af64",
+     "size": 1552680,
+     "sig": "f/KI+SE84E/S+Uu2zuKnlt0GQ8OcpG/rugW6iPm+pwd1cz79UjHnjOSqpkeu9z1EoVeS4Hv9uxooUXEJVG+MDQ=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_loom-0.17.1-ios-device-fa9d052923a8.a",
-     "sha256": "fa9d052923a808efa8f8870aee3e1147974072451042c97777161677e505dc47",
-     "size": 1778384,
-     "sig": "KWxcnIOHOP8cNn/YKNDMXmBP6Od49QnJ1/ecPuWT6QzjmvW3eCIcrE9fgxsUjywlqXwRJCze4txUJdArDY0zDw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_loom-0.18.2-ios-device-5380decfff9c.a",
+     "sha256": "5380decfff9c458507825e80fd9e8d673d0b8a7902f1f3c9c4ae6bc84343a6ba",
+     "size": 1802696,
+     "sig": "FExs9o61Tc2uWI80fvCDTqZ5KfbzaowTp/c8tCZ486E3O8VSbiW6e6CQ4fBO55pwx2FFtrbI7R3pb14m99vuBg=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_loom-0.17.1-ios-sim-0413e3ff1120.a",
-     "sha256": "0413e3ff1120da6119f70fb4b3af0f86b7c7b2e5b56f5aee0d5f2e53a2d7689c",
-     "size": 1787408,
-     "sig": "RrK8kZjfTYDNYblGDQGN5aR7BeIH9ZrW71XMXAotxvST9kogEtYHHCDSn5Xs0KwVoaMS2wFyUt7DjoT0MkKCCg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_loom-0.18.2-ios-sim-c5e4a20fb6a0.a",
+     "sha256": "c5e4a20fb6a04f82e52806f9a6dc0c810fdd43910552e09977776ef7865f8237",
+     "size": 1811120,
+     "sig": "FGjonRNL99FAOCDI3uspRjzLXRaSvOa59JsBvNIGtIh3r4bhcc8ax/AHo0z3M9VSybFqx0nnv3TEtInZ8xR1Dg=="
     }
    }
   },
@@ -4321,6 +4432,59 @@
    }
   },
   {
+   "id": "mb1",
+   "version": "0.15.0",
+   "repo": "leonardolopezchavira/minibrute-fm1",
+   "commit": "c759435b398158cf19d6a381b1f78685070f1406",
+   "pin": "provenance",
+   "name": "MB-1",
+   "license": "MIT",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.0,
+    "spectrum_corr": 1.0,
+    "screen_diff": 1.1,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mb1-0.15.0-android-arm64-v8a-5f25b31f8bd1.so",
+     "sha256": "5f25b31f8bd1222fbffda308e0798e8285a5e497042a2e7952664357377217f9",
+     "size": 325592,
+     "sig": "nAx6T2u8Mmur5fdbFe66MqLyfWGeP11uAnuToOSgbboLrSBT5PDEveTLBOAmMtuW6LlAMBCql3UFXiz+8F+ECw=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mb1-0.15.0-android-armeabi-v7a-fff71f699334.so",
+     "sha256": "fff71f69933401f6feaf29d9ab5f1ddbc09a3d3c751f8e81e0a8b01f1b598619",
+     "size": 317916,
+     "sig": "sS6EceSA7b6SVjOFrKIdPhRwccT6ih2eKWk9MbiDe+2FJxnBG44Go2xk0Tkhnwy+cxfInyOT1Xb5UAsk4fbTBA=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mb1-0.15.0-android-x86_64-79c010cda7be.so",
+     "sha256": "79c010cda7be6376244b7c6886c670849b9f8011f89d72e1cc11aca0fa7a6733",
+     "size": 338432,
+     "sig": "8sK7JfGfCLzS5M89Qjpe79AQhWyx/YucQzv1+PpOx9mGECinP2W55xaq2HhzRnvmTyS+oQTeiCoVpB9p6XH0BA=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mb1-0.15.0-ios-device-26082fa5a584.a",
+     "sha256": "26082fa5a584177cf9cd870ff3c577bc17c845d818054a229318aab3f139dec0",
+     "size": 385640,
+     "sig": "fCY5UOT97zMtjH+jYec6qSwFOHv59vPYpUlqRKygE1KSxfye9LoYx7JPiImMEmgiITIwbS+gdUlofuy/26xQAA=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mb1-0.15.0-ios-sim-cc95b8843478.a",
+     "sha256": "cc95b8843478cae51893e46e1b37852f607adfa3d2fb77aa2af723f5c1f7b78f",
+     "size": 386272,
+     "sig": "tXMPOrxxulkT8X9NCMXRtwuN2wbb/eD9NKQAQKVxC3djwNd49K/szV2EBd9wssM7Ep0YDhTzQKsYSJbXMe7eBg=="
+    }
+   }
+  },
+  {
    "id": "melodee",
    "version": "1.6.1",
    "repo": "keremimo/melodee",
@@ -4411,6 +4575,59 @@
      "sha256": "a8f0bb882af2b0663077e37ddfff4265ee4149044bfcfad045da6fabc227f186",
      "size": 293784,
      "sig": "RxJ32tFMOMkhuAHVV+9lrxgrm5To3ccOSb/kS0CCmc7aqMjZcZWUUKkxkZSBZiV0zp5Erh/lpfGHPMqDnx4oDw=="
+    }
+   }
+  },
+  {
+   "id": "mightyarcade",
+   "version": "1.0",
+   "repo": "NickCulbertson/FM1-Mighty-Arcade",
+   "commit": "87f3b2f3a195595163e0ee16e6a7104aae815880",
+   "pin": "provenance",
+   "name": "Mighty Arcade",
+   "license": "MPL-2.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.2,
+    "spectrum_corr": 0.997,
+    "screen_diff": 1.4,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mightyarcade-1.0-android-arm64-v8a-3df8f471cef1.so",
+     "sha256": "3df8f471cef1baa94f748fc7e7ee0af8cde82435d65bec34d9332a77241bc3ed",
+     "size": 931760,
+     "sig": "9tuymBqHRmo7042kpRP7Hv0Z9FnU3zHW1dl3pbtUOLQ3NSRXpyf9yrL7Uz2h0J69P3xf8c4rM8Zh+JXGUeO+Bw=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mightyarcade-1.0-android-armeabi-v7a-f9bb0e09c387.so",
+     "sha256": "f9bb0e09c387cac9fdd6f053dfd0b58459e37daf62fd10be8594e8130e777920",
+     "size": 961052,
+     "sig": "HxPGpy4JB4XBYV8pqYKj5n0BFL1YIlALvDtePy1SeILa6YBucLEqKgSgVYVadR6J3umf6n9cLL2Kx9eeyNE9Bg=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mightyarcade-1.0-android-x86_64-1f8395716c05.so",
+     "sha256": "1f8395716c057335d16963031de109e5f5cbf78b666f2d5567998f4577ed4c54",
+     "size": 1091824,
+     "sig": "VVaDsnHkugsaXJ2ZDhpUDEtoo9JdogMWHKlglC0+gmM4Fia/dxiNrEyb6JoWPczIbiuhsbrr02VIJkfLIOZRCQ=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mightyarcade-1.0-ios-device-fc823ac0a8a0.a",
+     "sha256": "fc823ac0a8a056b2d0b44264f8d585935b5c9ecf5e334a06c50edce2b35544d4",
+     "size": 1217744,
+     "sig": "vhJ+1b+uLRBAbrApJ+23rFt+7jS68kW+9hD8B1SmM2v1swyH6hF00Xqe2N2B62OJziAvbJQTbV+jbycuoOl9Cw=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mightyarcade-1.0-ios-sim-5e44b7e5475f.a",
+     "sha256": "5e44b7e5475fb0788fdd94bd29450b0525e7a672f69857ef04b8591d3a23222a",
+     "size": 1219584,
+     "sig": "Rck9bBBC9Y/+UhLx4qrRlVltd4dcyff2EQDdGwOC5AGa6MsA7gsefBD1fL8f7oEjSZkK27rjvDQi3CUrx3NVAQ=="
     }
    }
   },
@@ -4774,6 +4991,59 @@
    }
   },
   {
+   "id": "mumble",
+   "version": "0.1.1",
+   "repo": "kdziamura/fm1-mumble",
+   "commit": "a49b263f5c6dd5dd77a480d5fc242963ad89af71",
+   "pin": "provenance",
+   "name": "Mumble",
+   "license": "GPL-3.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.1,
+    "spectrum_corr": 1.0,
+    "screen_diff": 0.1,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mumble-0.1.1-android-arm64-v8a-cbdbea9a9694.so",
+     "sha256": "cbdbea9a969429753405ad51118825580795a3cfed7979f64e5157045a3de538",
+     "size": 320304,
+     "sig": "bhT0pVrsMns8mVKl15/UA9Lg14EJxyVTc7Rsk1kSZ4dqF6PeN981C3fg4KM1gd3qLT4ZGYbizMXA6LUVIjWKBg=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mumble-0.1.1-android-armeabi-v7a-a15c0a137024.so",
+     "sha256": "a15c0a1370244be64a38719501bb556d0a87c87439b785ac00877df410ccf721",
+     "size": 309176,
+     "sig": "t7xL+eXQHASMcg531F18dlGBprcRGrO9yEOeYPOj6dJ6kX6zG4crTKdsUTvJzAHtdKXgP96v0tZU+3Z5R6a4Bg=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mumble-0.1.1-android-x86_64-1688aa5a0549.so",
+     "sha256": "1688aa5a0549a0e280a5f1b4bcd635c63d042b186c971b3d70f158b6762f415f",
+     "size": 353200,
+     "sig": "y5QxnBWaJR9Y0Zhoh3LvchiebDFw45cFck9y7D9PePRzNkBg4J/SC88JU30UMRevUNbHyBUZBPMF4jY49lQiCw=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mumble-0.1.1-ios-device-cd5381675c35.a",
+     "sha256": "cd5381675c354bf41246fa6afa5b2c15c5b01f6a54f6cb29bc9a580fb33dc9e0",
+     "size": 419808,
+     "sig": "xXDYqxb036Wa4bsK28JXPs5aPQiXg4FJj+vCtCPvFVTZ4+77QSkYaxnQlTRqBOGI4kUUyN3wPFs4YmKAfgicCw=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_mumble-0.1.1-ios-sim-ea3eafad61ef.a",
+     "sha256": "ea3eafad61efeed2899eaae61c9b80a92dff74f9bd98350ef1509b96493efc73",
+     "size": 422096,
+     "sig": "XvHoSzqBXyODS49KCguVPXe6B0yTjXL4QP/XFTMGRmPN7+f1DDY8JxCJDR/TTc8LpYGtpIJy0ucNwyeFipyuAQ=="
+    }
+   }
+  },
+  {
    "id": "mutable",
    "version": "2.3",
    "repo": "kidbee85-beep/mutable-dreams",
@@ -5028,9 +5298,9 @@
   },
   {
    "id": "obervave",
-   "version": "3.5.2",
+   "version": "3.5.3",
    "repo": "zvenson/obervave",
-   "commit": "4673c4a7579a9dd0260d08febe875ffac9608917",
+   "commit": "546b2678330490becf55bc83c2fb4bcea9db6be1",
    "pin": "provenance",
    "name": "OberVave",
    "license": "GPL-3.0",
@@ -5041,41 +5311,41 @@
     "status": "match",
     "level_diff_db": 6.1,
     "spectrum_corr": 1.0,
-    "screen_diff": 0.5,
+    "screen_diff": 0.0,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_obervave-3.5.2-android-arm64-v8a.so",
-     "sha256": "1c566039a354a3851a1d4a521ea420f753363017346c8231422d1b11dc86b989",
-     "size": 602256,
-     "sig": "YnBh6Mg98S4UHizgyHdXXLhl3mKkRUImC7cnO+jN/4Pf6+Ydn/KYBJtJXxAkHQhXVMfOKEQ0XISm41UimMIvAw=="
-    },
-    "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_obervave-3.5.2-android-x86_64.so",
-     "sha256": "52ed3021b6c4b4926154e0ec64a511509185afe3be76d2dff4a794cc45b7be32",
-     "size": 638024,
-     "sig": "e7m+QicsZmiJ9rgWqoKpN9GQokb5yurbuk3hO5IfUnaMlBUWlrUPQ4VLFAi2aVMRFJbRMBs2r5z+cNjOeXsIDw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_obervave-3.5.3-android-arm64-v8a-4e67413c50ef.so",
+     "sha256": "4e67413c50ef7a73efa49aee6dda7138bc0de70ac84767fd81d8f6fe679e8b55",
+     "size": 602304,
+     "sig": "5emQG2fxFKNYoYXbC79/kQ2Ergx0Imr484QuEdtE5gjJdJ0bkGX3qCdn9OrIZ8q6pzmPNRRgQxCsmxQ+R3eUBw=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_obervave-3.5.2-android-armeabi-v7a.so",
-     "sha256": "1867bdfbcce90f2d7d1920bd718c1ee7c859b2fd3b05b7681d2d134b8b6e6506",
-     "size": 616184,
-     "sig": "CHa50V77lAX/GuhxRJVbDcKdpwEv+TE9KNDS/jb1TnEtQ1IuDl0nM2KIM34iDOJ5DHhV21cxxxOHZ3Ovz/gDBA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_obervave-3.5.3-android-armeabi-v7a-19df0e99631b.so",
+     "sha256": "19df0e99631b54dd094baf3e38cfa75c84090a9f10aa1d6ea66fa20a93213f7c",
+     "size": 616120,
+     "sig": "fJKCVU6SX/YBbfavCSj3BRMi3Hrwy6JJaKOn8HcVF3I41BXBJnLRb4XVJsi26ivUWlz1H/CZlRbN7V5ZijWaAw=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_obervave-3.5.3-android-x86_64-6bb58c95d11f.so",
+     "sha256": "6bb58c95d11f65c3481bd1f417c7509fedb063b4a44901d617cb9087d50d8d7e",
+     "size": 637928,
+     "sig": "2dYb9GWNAb/BRfdPzEcYvxnctIEPux/ge1fY9CFkzBdpigQogHVpSkkdRdwi8GWL6e+BuDluc2kbmps/cwOvAg=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_obervave-3.5.2-ios-device.a",
-     "sha256": "d156ff20e1048f4e1a72cb05febece94c56c39673828e568968b90b3ff7a9218",
-     "size": 377688,
-     "sig": "qAp8p754auL9eq+7DvPrHFL2lwRPPTigQmy+bVDZyceckoJ+AhHQN8anTHVToGgT9YJlXdaNDjmPtBsdTyuwCQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_obervave-3.5.3-ios-device-6d6528a1ea5b.a",
+     "sha256": "6d6528a1ea5b44f957d59c92a84aefa2a2718378a8243acd0708ae7e331e5525",
+     "size": 377736,
+     "sig": "CMYtOPkATTqJFW7/buY9W4+ZAVtHg3+42OBGwXDdm64AGwJ+viij1GcpovH9Rw72w5JhhmnrF7LD9O5qB8lPAg=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_obervave-3.5.2-ios-sim.a",
-     "sha256": "f9d88acee4c0984ce2bc3af329e73e3a20513c0f3065f026ed07e8805cb6b3ea",
-     "size": 381776,
-     "sig": "JabU+3uqSQiYTDQcgux7QEhNjUvLhENCohAFT9eJNgpSwMEvG65wmEnkQZZF62fMT2KA7x6g36bjLBS/ja87DQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_obervave-3.5.3-ios-sim-be7e6f90a71a.a",
+     "sha256": "be7e6f90a71a34ffa79b0d04ce53a2291d6f63b5e573a937588910d474d658c9",
+     "size": 381824,
+     "sig": "jZfZmh7hAUrmDwcOThEV6LviZjSp7xu8UiquuuwxaHoB54U7xqEtctSiU/oZslJxweKfNlIOmzS2/HLXWqHqCg=="
     }
    }
   },
@@ -5440,9 +5710,9 @@
   },
   {
    "id": "plissken",
-   "version": "0.20-rc1",
+   "version": "0.31",
    "repo": "dustekin/plissken",
-   "commit": "907edbd6ae4c9e650b70c1d36cd1fe48b27891dd",
+   "commit": "e0c6028b93f3cab45b75fdd63261dc04242fb0e1",
    "pin": "provenance",
    "name": "Plissken",
    "license": "MPL-2.0",
@@ -5451,43 +5721,43 @@
    "patches": [],
    "parity": {
     "status": "match",
-    "level_diff_db": 0.5,
+    "level_diff_db": 0.1,
     "spectrum_corr": 1.0,
     "screen_diff": 1.2,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-22",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_plissken-0.20-rc1-android-arm64-v8a-335ccf2bc87d.so",
-     "sha256": "335ccf2bc87dab6d88d3f4358091ef91c5187d0c745ccd63abb9e48f1bc79820",
-     "size": 596840,
-     "sig": "ME/9fjSgUgYFU0tmLrPY6oyEE5/JtoL6l10UOexJfRWbt0+IP9BaU9MOPWh94HM7oLFKhDg+2HeE/u1aEh3TCg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_plissken-0.31-android-arm64-v8a-95e110a348e3.so",
+     "sha256": "95e110a348e36295b40e35583895c842eea1fb1e9756104ee2eed6c56fd292df",
+     "size": 622184,
+     "sig": "XUJLjv/Q9FlVPj1CNAapkygWcmQnaNLQVvWXkJqXLEDKkZABmoG8I9RvKL83D52WvOrrNfjxzCuIkW6jprp1AA=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_plissken-0.20-rc1-android-armeabi-v7a-b4f97952b265.so",
-     "sha256": "b4f97952b265ab1648063eb9cd9d29e1d2fece1308f7a0b914165a8671239a99",
-     "size": 604060,
-     "sig": "idS8h35NY5ZGi6YBf9Fr8kV6ive95kaORLNihW27Jc5BdjH+W4AfkX5qXDXBgyWA+QNJIYVXOXyHm/9o4HprCQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_plissken-0.31-android-armeabi-v7a-4e2ab5d6b283.so",
+     "sha256": "4e2ab5d6b2839f20994100e1e12d581ff4fb55ddfd0e4b2e0364c496ddfa8215",
+     "size": 629764,
+     "sig": "fKNjF8yBJAARd+UREqvVSRqwNlfKaW5iyrKtR5RfB//upK0IytXmYE8Zm/19wBsXTKmZtyVGY/ATX5HErU5ICg=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_plissken-0.20-rc1-android-x86_64-0feabce973ed.so",
-     "sha256": "0feabce973ed7e057a846fd0e7b3bc3c43a451516c57ba90706bb90e1c65e716",
-     "size": 603848,
-     "sig": "xAsJTjsKefJbIqOOBf74CzYK9evwfYTEBVldn6dUHUFrr8Pu8b+4cIzJgGZvURD7a5PJerfGmOhTSfpPE6ruDA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_plissken-0.31-android-x86_64-5c90d614c36b.so",
+     "sha256": "5c90d614c36b31e48234d6a912686ea3469f0c6dbbddd055dba87c840f0daf82",
+     "size": 630104,
+     "sig": "0XQP0PdIA8Cla9p/HMqLeAgREWTM/Cw1HVhre4Ar0dNHRb5LyrfdjF4sdEVaTkl+301C9XucuThNLZOzmkT5CQ=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_plissken-0.20-rc1-ios-device-b8ae0ab6039f.a",
-     "sha256": "b8ae0ab6039f3d231fc2beb4a6bbce2fa3c7e37ecc8225bd0478ef215ffa0c9d",
-     "size": 693496,
-     "sig": "A1/POtLyJfG7i21Xu+O3XIIEbkSPwsBqCdqhp22wWbw9qxNHXQMcehmyp/PiJ15SKp17dSnm/FEtsAukKRv3Aw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_plissken-0.31-ios-device-702c2b04fd68.a",
+     "sha256": "702c2b04fd688d64f84a2e8f97b1182d13b2a606f216d138336908197b6b6335",
+     "size": 726504,
+     "sig": "XpcwAGrVQbkB8xVgN2FN5UNN3MB1xiFPUiRG/zJjQUFFS1f6t72GBjqZLFGYhxAuCC1ubhEo2Cvw4yyk/kYEBQ=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_plissken-0.20-rc1-ios-sim-da006b7bda30.a",
-     "sha256": "da006b7bda30fb88383312cd79f6d5a2fec6093a0e0a6689d5334e79db2b09ae",
-     "size": 693680,
-     "sig": "3ews68Jd1SNHkvCrOIkJtvJxx/2Qp5zcEoA2ouZ4CLCUGH0GcBNUT3Xfx9DOHwoY5lv8S5PRiTDutLohcY7bDg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_plissken-0.31-ios-sim-c9efb5d19261.a",
+     "sha256": "c9efb5d192613b66d3a83aed76765fba841427f6a39bec37d1f111c78c440ff2",
+     "size": 726560,
+     "sig": "rA8rdEFJQZx2nj8TphXYsOBOpEIVREZDh4LQHcLY8eBMk9iT8Scfpc6JvwGCn7UFzaYtZFUe827TVYB7RVcWCw=="
     }
    }
   },
@@ -5599,9 +5869,9 @@
   },
   {
    "id": "quantumgammawave",
-   "version": "1.12.9",
+   "version": "1.8.9",
    "repo": "Guillel51/Quantum-GammaWave",
-   "commit": "7e54548d1915c1f39588841f13eee430cbb8aa93",
+   "commit": "a4ee8c544810d24b1c1f0aab5a0627c35ca866cd",
    "pin": "tag",
    "name": "Quantum GammaWave",
    "license": "GPL-3.0",
@@ -5612,49 +5882,37 @@
     "status": "silent",
     "level_diff_db": 0.0,
     "spectrum_corr": null,
-    "screen_diff": 0.5,
+    "screen_diff": 0.8,
     "notes": "no sound from a chord or PLAY in either"
    },
    "added": "2026-11-19",
-   "updated": "2026-11-22",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quantumgammawave-1.12.9-android-arm64-v8a-680cc5b31df9.so",
-     "sha256": "680cc5b31df9ba5f6e6d1d090e77ef4e0f35ab57705154009655718c17c7884b",
-     "size": 1603456,
-     "sig": "Z6lWeKDO5FZlOfOkUa+w9jpmroic9tk8kXJXcaQC/K74f++GJVjS72VPtZ+vO71lFkC40ch6Z7RUh1cwAZa4Bg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quantumgammawave-1.8.9-android-arm64-v8a-b28dc81b2b3b.so",
+     "sha256": "b28dc81b2b3b71f09bd4bc6be069e7fc8284786c741df31c85e2eae0b1fcdabf",
+     "size": 1614072,
+     "sig": "Ulch4SdFsTglWsuN3p1iarsnpX2hJBsY80fygru9FN8pNBG8vlDoWBxSVeJJR/NuTwmWtCCRBQP+mIf06pmOBQ=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quantumgammawave-1.12.9-android-armeabi-v7a-f7e70c001f8e.so",
-     "sha256": "f7e70c001f8ef054a6afe372f1f8ae99c482985b85ddf7c0bd5f0ae7428eea19",
-     "size": 1611948,
-     "sig": "WqzpC56KwLur9gDcEujudpigC5GML6O2Ep9P2qAxBRzp/wEHa4bM83VUm5nSr/ambi0/3o0laFv4LOBtp9Z7Bw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quantumgammawave-1.8.9-android-armeabi-v7a-a578eb0f57fa.so",
+     "sha256": "a578eb0f57fad0e35c812e1fe89372dd70dc3e868f0ef37310dfbc1fa6ebb508",
+     "size": 1621068,
+     "sig": "BwVvJ0j4jhsZUxDBcWjcLcjQliV0nOCbwcgxppSRk+QwmplHZ5EY7eUuSDWbnUxJzLz63Mzmpje68f5mb4+TDg=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quantumgammawave-1.12.9-android-x86_64-5103dd30c595.so",
-     "sha256": "5103dd30c595b2b1d398d683ea9ca18291ae80c28863873ff894ddd701ba28e8",
-     "size": 1797016,
-     "sig": "OUiJI9HkV0u3vkWkgTsGvyfVUNh9MBGu4ohRQFufIcZFzDILEviihmaAYi/JNrxIW38gTt1x1iGO8IPcpv1pDg=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quantumgammawave-1.12.9-ios-device-246e08bf77ea.a",
-     "sha256": "246e08bf77ea8c383b046f63c7715d706c6d10f9e5caa6b22bc1d2dab6304aac",
-     "size": 2189024,
-     "sig": "h58innZnVFJu1K3B3K4UTY3vFuvRyViMOrpogeftgOVdYXHbeVNKKQ17YBJ1VdsgWdVx6x2yAvUKHlA1EqJACg=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quantumgammawave-1.12.9-ios-sim-e71db0179366.a",
-     "sha256": "e71db017936614c3b010b30ca7fcbabfe0f4f613936d728df6956085d5aa494b",
-     "size": 2204048,
-     "sig": "JXVWsGAwVv1VVG+VneSAJ6GWWNR9zossG6LtldsmfxpKGi4JcJs8/pppJ9ja9mlsu388xCIvlmhxK8zHxMZUBw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quantumgammawave-1.8.9-android-x86_64-d8ecd4e1edd1.so",
+     "sha256": "d8ecd4e1edd12c5e8aff7589c8f2b7d5544f3b0a7837a51e5604bdacd467d1a9",
+     "size": 1810296,
+     "sig": "TU1h2GvABEH+mM+vEhxTGuG7js39Oo9kSKzjXQdc+FVe8/ya56sTAQMLAgIftCOLhd2AlgRV+mmbaxWB6S8FAQ=="
     }
    }
   },
   {
    "id": "quartet",
-   "version": "2.5",
+   "version": "3.1",
    "repo": "MammothCheese/quartet",
-   "commit": "846bf9d3c865ca858557cf3d34dd3975fe07d9a6",
+   "commit": "935f682cdd574c4e223b0166f1d11f85d6763078",
    "pin": "tag",
    "name": "Quartet",
    "license": "GPL-3.0",
@@ -5663,43 +5921,43 @@
    "patches": [],
    "parity": {
     "status": "match",
-    "level_diff_db": 6.1,
+    "level_diff_db": 6.0,
     "spectrum_corr": 1.0,
-    "screen_diff": 0.9,
+    "screen_diff": 1.3,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-22",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quartet-2.5-android-arm64-v8a-92b77933fcea.so",
-     "sha256": "92b77933fcea58d983ca0cc8551b0d6f9bae7c107e07fcacffc0f16993df10a1",
-     "size": 752232,
-     "sig": "lwW74TvaSavDly+dFpzl4DB+Ksb+okBEIiwqUX5y8vPFiQUhUmuvSZVylCFFN23GMr9lTmK9tZrSRzIie0d5Aw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quartet-3.1-android-arm64-v8a-2ccab7310f21.so",
+     "sha256": "2ccab7310f21981bb4675dfd7a5ccee344159cd9cda2447de3f0b724da860421",
+     "size": 837352,
+     "sig": "F8hQ3q/CKA7PHTqO0j/+T+X9I2dITqhZocvc8C+qSvWPVO1POryqj9N6bmEXbEnrhzOQSb40Rv2FdjAYbbl5Dw=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quartet-2.5-android-armeabi-v7a-052b241ce3cc.so",
-     "sha256": "052b241ce3cc12c72f202d00947262431b19569bc018c938b91f283084ab4ca1",
-     "size": 767448,
-     "sig": "gpj8nLGV5w5dcTChO0NfnT59Iy9lfC8azxpMHtGV6m4XQtxu53iVbJxxVeUaSZg0vnwQ+tYDgvQ0wbasBYlvDA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quartet-3.1-android-armeabi-v7a-2edb07caf3f6.so",
+     "sha256": "2edb07caf3f69d12ef6de4e4508af5b643e5541825670973bb79e42f724b9e09",
+     "size": 856980,
+     "sig": "iGhiJTrbFG2P0/oqTKI8QSXciR/8TxcBL2walvHjovvXOJq/Jvxsb9idivIRt0x+M8U2mpAlYP5iOFsQqTD0Ag=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quartet-2.5-android-x86_64-1ec3b0377685.so",
-     "sha256": "1ec3b0377685228d31ec9b5a91b752ba2a8eb853f27c37eee4745c795bd2fc03",
-     "size": 833416,
-     "sig": "orZPzQsnCLI0bDSlMEbE9R/mcxYgcO3kNxuo4SnOleZjo8iYHjyvr/srNU59lsDEvdZnseQHm/jnK4NalcbhBw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quartet-3.1-android-x86_64-05691e07a47f.so",
+     "sha256": "05691e07a47f67bc4cf30ed0a7dfd54970d00c82efc3b38240c4a12ed960b407",
+     "size": 932216,
+     "sig": "KTUfiI1A29HQiWTcWnrY4SSKbuKxpSQATPONCiEzXR09dSI/Cm6gcicszJNAA1D4R9jzVv6N0qKgnmaFfMP5AQ=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quartet-2.5-ios-device-05403f30eaf3.a",
-     "sha256": "05403f30eaf367f6300607fb3957ad8e8f23202ff2d901ac44c50b083b16611b",
-     "size": 556280,
-     "sig": "bZ1CT/8QgvlRi833j0LvDCCUzlN4PjAwK1YWlS1W7MC1cJzQYLimLPu+8dxNrk6tdVA+bjyvIA2XTkm6cJu3Dw=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quartet-3.1-ios-device-32eb26f43ccd.a",
+     "sha256": "32eb26f43ccde60d244d45d0d8f824f5f99b5b37331cb6242b767af03d3fa94b",
+     "size": 680160,
+     "sig": "dC/d/+a2gSrlo+rN0pEQj5iK5C+jvOu876g768aatl/w6e2BXNstPBUmIZft7HwsPIVRFZX7SjiNtPG9ko9BBg=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_quartet-2.5-ios-sim-f9715d01077d.a",
-     "sha256": "f9715d01077dd4e34d14c1b2e0cbba23a8ac1652cc70d7511b5b8475cf5f6f22",
-     "size": 559736,
-     "sig": "Ak9dmaksU43wTIKi2k7cbqmHCS3Uswif3rjiYbofd28yv0tkb20A+rxTcEzKFa8VSZEHCeBR2iLXYRynycWwCg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quartet-3.1-ios-sim-117a6fd69ee9.a",
+     "sha256": "117a6fd69ee91d28d654a944225d524c7d031e277bd15449e598ab915ef724d3",
+     "size": 683736,
+     "sig": "51SFcSwegXvg/gVGFQLTl/iLouuoK669Ss3JQq/lDYYONuSRHKGPHxi3z4D2cAQVQZp7o0VnL3mCEZF24KiGBA=="
     }
    }
   },
@@ -5859,6 +6117,47 @@
      "sha256": "483a19b03ab7dea1609e89527de4f85e139a6298b4154072243def74d7abf3da",
      "size": 1264400,
      "sig": "uSwrKKdisSuTiQ+jNS4GNSsYCrBhIRgLiMCJvcwc7wGdyKvbs6M9d9BJcvexpYkozPyKEiW14EEcOQzBBdgOAQ=="
+    }
+   }
+  },
+  {
+   "id": "rhinotiger",
+   "version": "1.0",
+   "repo": "hacha/rhinotiger",
+   "commit": "f0d709ec80d8943cc9567c0d817e21baef7b65d6",
+   "pin": "provenance",
+   "name": "RhinoTiger",
+   "license": "GPL-3.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.1,
+    "spectrum_corr": 1.0,
+    "screen_diff": 0.1,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_rhinotiger-1.0-android-arm64-v8a-a4fdf3070aee.so",
+     "sha256": "a4fdf3070aee7613bb7168d636bff4ed86115c246d181f58e7f81edbc896b009",
+     "size": 438704,
+     "sig": "GyAgjEhm8+ULptwJmt24UmTtcHuTEOQTAM1A01HGjms9eMC1tFCaDb0R8Ep87Ur7E5ecQ8au1axeKDAzC7/FDQ=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_rhinotiger-1.0-android-armeabi-v7a-75ccde8669b6.so",
+     "sha256": "75ccde8669b60ce365dc34b2c9651b65bfe6ac3ce1c805f8919a66cc7c376019",
+     "size": 426204,
+     "sig": "NMOfZIH6T7Vjf/62vHCN8JqQ0qCgQqkapDG4zl1joZUCfPLKZ6CVugTzVkYtT/h1d1hYhMjLFJZ6nPJVkJ88BA=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_rhinotiger-1.0-android-x86_64-4dbd4823edd6.so",
+     "sha256": "4dbd4823edd6b26378720eced32b75e91930d1c7b7949843d8d98321176598c0",
+     "size": 456464,
+     "sig": "NClNEyklkz3rUusMxVrkdunfDrLo0UloBzETYhAmCKMUKIQDOBCTmDlDTJfVQRwQtsLIcgpCzk0POzW7fu46AQ=="
     }
    }
   },
@@ -6235,9 +6534,9 @@
   },
   {
    "id": "sillage",
-   "version": "2.2.0",
+   "version": "2.2.1",
    "repo": "lelacnoir-lab/Sillage",
-   "commit": "30dfc640534b86ea49b4651f0d5ba31c170669c0",
+   "commit": "fdad47df6c3b33264339d3607c8ab7b441b448de",
    "pin": "tag",
    "name": "Sillage",
    "license": "GPL-3.0",
@@ -6248,49 +6547,37 @@
     "status": "match",
     "level_diff_db": 0.0,
     "spectrum_corr": 1.0,
-    "screen_diff": 2.6,
+    "screen_diff": 3.1,
     "notes": ""
    },
    "added": "2026-11-21",
-   "updated": "2026-11-21",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_sillage-2.2.0-android-arm64-v8a-f7c867c5072d.so",
-     "sha256": "f7c867c5072d11dd9b9191cea13fa3bf67f5f54cad25249d194fd9ab318f85a9",
-     "size": 1471432,
-     "sig": "mCzF55QcCseyPfA5ZQluR4XrmBg9sQkxWyvRFP8yxhYI81Bg+Si/ZINTbmMYJd5AzcvgvuXl7DNLbunJLFzrDg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sillage-2.2.1-android-arm64-v8a-920fd0c00177.so",
+     "sha256": "920fd0c00177276f18c8300859c51a8e68b9712acc78b9e4e5dc554767fd70d1",
+     "size": 1471672,
+     "sig": "3Eh9zrLzD4/ULVrOxWaUJsovWpII6rY9qpMrGotJxtX46BCEYfvKfQpaxKkM6d6/Xn3bGlRT+sfZBwCSaH/KCA=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_sillage-2.2.0-android-armeabi-v7a-3a47a314b0a4.so",
-     "sha256": "3a47a314b0a4a8ce80f30d33d0275e726d812689f07a04071b9dd2e48c74bcf6",
-     "size": 1450412,
-     "sig": "nYam+WNvLr+32FsrBKlOpIBNFPnbPggjQ5nlOidZHnzvwC3s4+7H6d4S3lNl0vP1KXQWTOeMkKOyQj4PeezNDQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sillage-2.2.1-android-armeabi-v7a-bc11a6fbe0b6.so",
+     "sha256": "bc11a6fbe0b6f26622297a0aff7e212887bcd2cde334cabe75a73e0ec6e363f4",
+     "size": 1450924,
+     "sig": "be7If3sQeYfdF7Jp3jmF/9DRgQmSuWxaXVyljvlylu7wRMIpDd72D9UaZ/zjaoa0Snja5eSq5Ib86evft738BQ=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_sillage-2.2.0-android-x86_64-28ff43e30f0f.so",
-     "sha256": "28ff43e30f0fd94774cd595d1f1896ba4a1aa153079a91db4e686d4df5613175",
-     "size": 1640552,
-     "sig": "4X50IuB0VHXTXW3byD95mxmfUDbTQYVIYluJZySFytT965xVU2+TCvj17FpSSNldMUip9bUnifr3K9GvhU4rDA=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_sillage-2.2.0-ios-device-7fd113d56252.a",
-     "sha256": "7fd113d562528784a0b69dcb4c3d9b3abf04ac2369d41484bb6abef784f0fc16",
-     "size": 1949480,
-     "sig": "uIOexTFV7SJvqI4lR9JkvXQLyYdzieVC2OqPY204CK4Jkt0RWEJbM4gnhWc7+NSCqsNPqEteiLWPsXEGffrGCA=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261121-15/libcart_sillage-2.2.0-ios-sim-39259f8840a5.a",
-     "sha256": "39259f8840a5f546fed5c30908d299e847a6fe8ab55018ed05a5a3d77f1117fa",
-     "size": 1960416,
-     "sig": "5q3NJ0v8ShiS3HR7s8ubFTQsb6HzYDHdSmqVcmzko4Lzklxx8Mz/oGhkpLeowjc+CBAyns1JwSTZg7hbGX71BQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sillage-2.2.1-android-x86_64-9d054e6beb0b.so",
+     "sha256": "9d054e6beb0b1891f4bf24467034d798dc4d4f2f4ad81e981780916e1e319a23",
+     "size": 1641048,
+     "sig": "nKrMxPw0AkCF9jN3vkWvjxobRc5P67fxH66zBpI/XsD4wMmix/owzd4SS4RSBXIuxqIEMqujprWVKWMERnygBg=="
     }
    }
   },
   {
    "id": "sixmachines",
-   "version": "0.1.2",
+   "version": "0.1.5",
    "repo": "swtdr34mz-afk/SIX_MACHINES",
-   "commit": "0940991c48202cf89b6624070fb71ff9aae6950f",
+   "commit": "380ca92f80d7448530ea2dea171891244fab813e",
    "pin": "tag",
    "name": "SIX MACHINES",
    "license": "MPL-2.0",
@@ -6301,41 +6588,29 @@
     "status": "match",
     "level_diff_db": 0.0,
     "spectrum_corr": 1.0,
-    "screen_diff": 11.0,
+    "screen_diff": 10.7,
     "notes": ""
    },
    "added": "2026-11-22",
-   "updated": "2026-11-22",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_sixmachines-0.1.2-android-arm64-v8a-be7922926cbf.so",
-     "sha256": "be7922926cbf660fcaa73b1a03e533cb6c0318fdaa4c1413ebf52c560c2d4e42",
-     "size": 311032,
-     "sig": "1aO2+w1oYqgVNWzrNNiJWD0DilcdPnTVAG3FIsv7bytep43viT3F9oy0GsbUp/VpBpon65Et5gspuahzz958CA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sixmachines-0.1.5-android-arm64-v8a-4b0f48f26a3a.so",
+     "sha256": "4b0f48f26a3a1bd6850307dc6ca94f5124d67cacff2307bd166e5d8f4a2c67f2",
+     "size": 319216,
+     "sig": "A6FiVhl2/Cd4epFyEahswVB1IcI/bWQxq2S3IXX0JDjwNgcoE37qx+2Z4gJfLxLhELrHA+AQT0ij45li7TkuAg=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_sixmachines-0.1.2-android-armeabi-v7a-9448e17bb13f.so",
-     "sha256": "9448e17bb13f6612d2fad1a9c8555c9bf96715673078ad57bafdb71e548948b2",
-     "size": 295824,
-     "sig": "MJrDVS62iv0ps2ka5Fzy0596IFUcWNrMAF2W/9S+hN/7dit/fkl5ySpEHgCCoU/BCPweZQ1xaVAnt5hb5lMhDQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sixmachines-0.1.5-android-armeabi-v7a-432af04a5b33.so",
+     "sha256": "432af04a5b333ca9aeb01f693029d686a35c37250f65a525b56da26e0ff36f14",
+     "size": 304196,
+     "sig": "sTFkquCOAXPn3dfGQjzz+qy8GlFUK61E7UyOcKx1ymxvqg73awptMlWaPHJRXRcDUXEK/J6uhEoDv86/cWgiBQ=="
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_sixmachines-0.1.2-android-x86_64-39028b086ca4.so",
-     "sha256": "39028b086ca4acc065a5df05164e71d3b2afe3f3fe50f7c3d4881803c6884b20",
-     "size": 322584,
-     "sig": "oQKsLPZ0hPzNwxUGDauaURAb0XgGR0tmUt65m/5f78yM0Cqntr8WFVwFAaxsJCi/JF9CEOS3Dx8ZywC8H90bDw=="
-    },
-    "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_sixmachines-0.1.2-ios-device-ec05f1a24548.a",
-     "sha256": "ec05f1a245488023166d6796200e37c6db97acee39cf698b7229c49cc8af090f",
-     "size": 359032,
-     "sig": "7ft6Tp4eQb6wFrymS4uOMqdpn4L83I5AzyBqssykegLoV13kQRaVJlQeIQXtEYxz/GDHS9/h990T+b58uDh1AA=="
-    },
-    "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261122-16/libcart_sixmachines-0.1.2-ios-sim-ce6e11238428.a",
-     "sha256": "ce6e112384281ff20bf7fd1429f5158981a8a94c54cb36a0822382ea599a4e99",
-     "size": 359312,
-     "sig": "mv1p78439rrYHLJVLQLSiWGSa7m8/C84089f0casKacF0yCgQciZN+J0HuJL1O+NGy+XChfNH2ljrbs+z+MJAQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sixmachines-0.1.5-android-x86_64-7602120eb08a.so",
+     "sha256": "7602120eb08a084ae0417ade20d9b1e92b271321e2ce01d2a8172e899d17cab4",
+     "size": 330928,
+     "sig": "Tc78lXWGmb6cnowD3XIejaecPGr876iQOP4S04ppamkwe5SzOUkbRphqgiRB9PUEQ66wB+febH7FRWHB4MuiCA=="
     }
    }
   },
@@ -6536,6 +6811,47 @@
      "sha256": "a79a3c3fdb9c2f98bb1d942b0f610828a011f71e885a75d38b2f909ac5ca6830",
      "size": 789100,
      "sig": "bgPIGrKNFT+HQ7UnDYxgh6dELwW5YsNrwxU3CUJP2vCxt8Om+MHh9eqnLW2JZ1PsboDhT41P6n4rse/nnmh/BA=="
+    }
+   }
+  },
+  {
+   "id": "strangersynth",
+   "version": "0.7.0",
+   "repo": "swtdr34mz-afk/STRANGER_SYNTH",
+   "commit": "10ffdc12b1183d318e835381da9dfd1396c73ccc",
+   "pin": "tag",
+   "name": "STRANGER SYNTH",
+   "license": "MPL-2.0",
+   "recipe": "web",
+   "build": "clean",
+   "patches": [],
+   "parity": {
+    "status": "match",
+    "level_diff_db": 0.2,
+    "spectrum_corr": 0.998,
+    "screen_diff": 10.0,
+    "notes": ""
+   },
+   "added": "2026-11-23",
+   "updated": "2026-11-23",
+   "assets": {
+    "android-arm64-v8a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_strangersynth-0.7.0-android-arm64-v8a-c3576c754dd6.so",
+     "sha256": "c3576c754dd6c77219ca34f63e51fb636b071bbb9955fc6038ab017602864e43",
+     "size": 385456,
+     "sig": "xgJVBrU2EWo2lMRGpZ/hPGF4etEIJRMrnWHzkKdld3oEiaSbn/FTqKUlWGRklvmmJRXg5W9yCJQ+SwGCcYNPDw=="
+    },
+    "android-armeabi-v7a": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_strangersynth-0.7.0-android-armeabi-v7a-f5ce12462cad.so",
+     "sha256": "f5ce12462cadbf19ac045763a28836764835be95fed1c6197a96f8e243a43259",
+     "size": 382364,
+     "sig": "nhf4CLnCNCEQgP0PBSFuRCCW7tQZPKsUVPGz7TCGYTtLEAB2Rc0lcpAcqNnY+YSkcPHcSviQ/pcz0Kmi9wpACA=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_strangersynth-0.7.0-android-x86_64-829e41437b73.so",
+     "sha256": "829e41437b733128962dd7a500e9a9abae4c9b13da46cf367418e54769604fd1",
+     "size": 432120,
+     "sig": "B7QEjnQsczZl+ezFVc45YjOpzxVSaSB2cxILvQSTwRdI+4xr4a7P+GAofdsSltjeDusouZpBIUB7chlC9ldzBw=="
     }
    }
   },
@@ -6859,9 +7175,9 @@
   },
   {
    "id": "valle",
-   "version": "0.9-alpha",
+   "version": "0.9.1-alpha",
    "repo": "tammygucci/valee",
-   "commit": "3bd7398778554d0b2cfd0924d3254507fe4f8798",
+   "commit": "d8aa0d409f2581ece83525f4c3b2d4566a5400e7",
    "pin": "tag",
    "name": "Vall\u00e9e",
    "license": "GPL-3.0",
@@ -6872,41 +7188,41 @@
     "status": "match",
     "level_diff_db": -0.6,
     "spectrum_corr": 1.0,
-    "screen_diff": 5.5,
+    "screen_diff": 5.6,
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-23",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-11.3/libcart_valle-0.9-alpha-android-arm64-v8a.so",
-     "sha256": "028b8eab06dad626910dafeb6357c38602540bcc0cf86b20a9e66e02955cafa1",
-     "size": 1449632,
-     "sig": "mo8bFVu2JmJpVCyYHD5YDi4RvSDAkuPDa9wzuGxlvm4j0Wrwz9JlUCqU0/E6pUjZXNb6bHkCu8LuGaKxS5UzAQ=="
-    },
-    "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-11.3/libcart_valle-0.9-alpha-android-x86_64.so",
-     "sha256": "1dd609c16c4e954c40117f310ade6ed6f2974fd76b72b25b84b3f155864b19ed",
-     "size": 1629360,
-     "sig": "JR0r2O3XDx2CsJzetCHLt+hbe7E/4s7MhrdQYWaTPE2A75MUwSwaIE73Busg6PyI2Aj3vWC7CNu0pNjsNhOxBQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_valle-0.9.1-alpha-android-arm64-v8a-da12d5a8f437.so",
+     "sha256": "da12d5a8f437d55dd9e59f5704aef4242016db25f2ef8e4423af13c2c104ae90",
+     "size": 1463104,
+     "sig": "CP7VHa46lToaeBzYwJ4ytqba7MFbCMVIzBnQB1FnyZI2ivxSuoBfOvGKxaHH+9yr0777kFK0PeUsgrDmBilfAg=="
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-11.3/libcart_valle-0.9-alpha-android-armeabi-v7a.so",
-     "sha256": "80ce8367adb13e304ef2387bb73d0a2d2f98edb35352981dd5d5ab7eb8571b7b",
-     "size": 1419408,
-     "sig": "u9I5JEYfD8t2/Q5d/6vo5/hLw4JgxGOc0C47EFq44M2F/YWHnKrGg9JanFWKpSmlM0paQhVC78Mzh9gDu4PgAQ=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_valle-0.9.1-alpha-android-armeabi-v7a-47bf97fe1856.so",
+     "sha256": "47bf97fe185623f1f65712ecb8b4143e2c47c80e5e698dfbf2139284eefe3792",
+     "size": 1433500,
+     "sig": "+WOLNePvMDYlwjQONcKWwPu+OZscJd8TlW8/jMZ7ADIMUkrjhxgGiS/mRjo/NSGbSAtI7CLTy4Ii5Ymf/3CvAg=="
+    },
+    "android-x86_64": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_valle-0.9.1-alpha-android-x86_64-75f5b5e7b5a3.so",
+     "sha256": "75f5b5e7b5a3b75f3c7fb98b7d4380b2b9d9be24ad10535a92a7607e78e16b50",
+     "size": 1642144,
+     "sig": "Zk0vXPVcK2OAm9nxu2otXEdBMiOz4mfdmUnjHy8l9sZVnsnF5lYaM97GMvz88At3eDzy+5qSnmU9VXZTDK6eDA=="
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-11.3/libcart_valle-0.9-alpha-ios-device.a",
-     "sha256": "4a2278dbeb8bfaa0aa327f97b9ddcaaa44df01368d0b50ca908664f55c3bdd41",
-     "size": 1923424,
-     "sig": "AeaBY8aTucLGQVDnQx6ZmeajSYZo6ZtBat4KuJmhakRpzzK72uKFcxUoROtqqeQAF6CEV63hwv5qURAkp2n5Cg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_valle-0.9.1-alpha-ios-device-c49ac57c287a.a",
+     "sha256": "c49ac57c287a80b68d4c5635fcc708cb2a3cfdc3e71b4eaa429b94c3b84ce288",
+     "size": 1943248,
+     "sig": "SycGamm9umRCHCd8sjbmZa4dwksI2uR+11FUy2qhPw9PMCQB9S3qJgt+AJZE2zT6Vmw2e04AmdjBr43PU05VCA=="
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-11.3/libcart_valle-0.9-alpha-ios-sim.a",
-     "sha256": "e0e587807bc8c60422734d7ca13e08ab093a7ecd4bf03a8e6e267f31cf1d2117",
-     "size": 1944192,
-     "sig": "3TKTVOCH/iDEwc8U8oHxY4F7HkV2OW+jpZNUD2uguoWqrt0Kedmi0ycdAHRKxXOhyX20dR2Dhb6zwj+l8gWzAg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_valle-0.9.1-alpha-ios-sim-c21c1d06eb93.a",
+     "sha256": "c21c1d06eb9314722df0a9307eb11f534a8eb3dfa427c177c7ab196c4e0c7cd8",
+     "size": 1963784,
+     "sig": "oPHzPkGQcfONx1rZVlTAiXco/t5Gss3BM7fFP5swbH8GEjUyRkRsjFoFA9zQF231eYhwfRO/iSWZyw65CHIdAw=="
     }
    }
   },
@@ -7349,6 +7665,36 @@
    "date": "2026-11-19"
   },
   {
+   "id": "a22",
+   "version": "0.4.0",
+   "repo": "abektes/a22",
+   "commit": "99523be29a7e0bb5d05407d2c5fb4d04d2a97303",
+   "pin": "provenance",
+   "check": "unchecked",
+   "reason": "no check ran",
+   "date": "2026-11-23"
+  },
+  {
+   "id": "abyss",
+   "version": "1.0.1",
+   "repo": "Tentacletunes/abyss",
+   "commit": "7e8440b6bedb3f1b045099b8013b7f115329c596",
+   "pin": "tag",
+   "check": "unchecked",
+   "reason": "no check ran",
+   "date": "2026-11-23"
+  },
+  {
+   "id": "aisling",
+   "version": "1.6.1",
+   "repo": "stephencummins/fm1-aisling",
+   "commit": "3ce6cd31d9ca31f41a672c6e86e8c0a82f1512a5",
+   "pin": "tag",
+   "check": "diverges",
+   "reason": "spectrum r=0.679 (chord)",
+   "date": "2026-11-23"
+  },
+  {
    "id": "aislingfx1",
    "version": "1.1",
    "repo": "stephencummins/fx1-aisling",
@@ -7510,13 +7856,13 @@
   },
   {
    "id": "bigorna",
-   "version": "2026.11.21",
+   "version": "2026.11.23",
    "repo": "nzimas/bigorna",
-   "commit": "8e71d2d958ec20bd81ed7cf66d8ec60e508e17b5",
+   "commit": "70e4675c7b2bd00f618ace4a4dba1ce83e261ad7",
    "pin": "head",
    "check": "unchecked",
    "reason": "no check ran",
-   "date": "2026-11-22"
+   "date": "2026-11-23"
   },
   {
    "id": "blop",
@@ -7547,6 +7893,16 @@
    "check": "unchecked",
    "reason": "no check ran",
    "date": "2026-11-19"
+  },
+  {
+   "id": "bourdon",
+   "version": "0.35",
+   "repo": "kevinsint/bourdon",
+   "commit": "a42f910521e2e2ccfd67038dbe2f37c5eee722eb",
+   "pin": "tag",
+   "check": "unchecked",
+   "reason": "no check ran",
+   "date": "2026-11-23"
   },
   {
    "id": "burgerstudiofm1",
@@ -7580,13 +7936,13 @@
   },
   {
    "id": "choppah",
-   "version": "1.5.2",
+   "version": "1.6",
    "repo": "profikid/fm1-break-choppah",
-   "commit": "82e02d4e9d47e67b2c99bc54c1bbfa1b7e7e61ea",
+   "commit": "31d98402380c27a64c82c10c3e4c5960632f18a3",
    "pin": "provenance",
-   "check": "diverges",
-   "reason": "screen play 15.9; spectrum r=0.062 (play)",
-   "date": "2026-11-22"
+   "check": "broken",
+   "reason": "native silent, the emulator sounds",
+   "date": "2026-11-23"
   },
   {
    "id": "choralroot",
@@ -7610,13 +7966,13 @@
   },
   {
    "id": "chordrun",
-   "version": "1.4",
-   "repo": "swtdr34mz-afk/plop",
-   "commit": "5e416b37fc9baf0318f96682ad734badef820d65",
+   "version": "2.6",
+   "repo": "swtdr34mz-afk/CHORD_RUN",
+   "commit": "5b6573b82c4d8296efbdf460c7b00e9efd44d3b0",
    "pin": "tag",
    "check": "diverges",
-   "reason": "screen boot 44.9; level +7.3 dB (chord); spectrum r=0.826 (chord)",
-   "date": "2026-11-21"
+   "reason": "screen boot 45.1; level +7.3 dB (chord)",
+   "date": "2026-11-23"
   },
   {
    "id": "clatter",
@@ -7637,6 +7993,16 @@
    "check": "unchecked",
    "reason": "no check ran",
    "date": "2026-11-19"
+  },
+  {
+   "id": "collapse",
+   "version": "0.3.1",
+   "repo": "swtdr34mz-afk/COLLAPSE",
+   "commit": "548fb289f9be6086899451914ec19f67031e0b39",
+   "pin": "tag",
+   "check": "diverges",
+   "reason": "screen play 14.7",
+   "date": "2026-11-23"
   },
   {
    "id": "cord",
@@ -7779,16 +8145,6 @@
    "date": "2026-11-19"
   },
   {
-   "id": "felucca",
-   "version": "1.8.2",
-   "repo": "hugelton/Felucca",
-   "commit": "6162de864075ad9edb8cd35e0e45ba75faa5d0db",
-   "pin": "tag",
-   "check": "unchecked",
-   "reason": "no check ran",
-   "date": "2026-11-19"
-  },
-  {
    "id": "felucca8",
    "version": "1.8.5",
    "repo": "echoe/Felucca_8_patterns",
@@ -7830,13 +8186,13 @@
   },
   {
    "id": "fm1chimeravocal",
-   "version": "0.9.0",
+   "version": "1.0.0",
    "repo": "shan-sherif/fm-1-chimera-vocal",
-   "commit": "742227052c302ff45ddf7df3ffbfe38d1d6fc0bd",
+   "commit": "589211f996848afb5d373f7da7098682407a3aca",
    "pin": "provenance",
    "check": "diverges",
-   "reason": "spectrum r=0.577 (chord)",
-   "date": "2026-11-21"
+   "reason": "spectrum r=0.579 (chord)",
+   "date": "2026-11-23"
   },
   {
    "id": "fm1dock",
@@ -8070,13 +8426,13 @@
   },
   {
    "id": "karma",
-   "version": "3.1.5",
+   "version": "3.1.6",
    "repo": "eatyourgreensstudio-dotcom/karma-fm1",
-   "commit": "e56a22184f938d3c7c775129da247a36219b6fce",
+   "commit": "1d67ab98475b598263bc38fc43b57742202bcd96",
    "pin": "tag",
    "check": "diverges",
    "reason": "level +4.9 dB (chord)",
-   "date": "2026-11-19"
+   "date": "2026-11-23"
   },
   {
    "id": "keystepone",
@@ -8200,13 +8556,13 @@
   },
   {
    "id": "matryoshka",
-   "version": "1.24.1",
+   "version": "1.26.0",
    "repo": "glvno/matryoshka",
-   "commit": "758685f6c97a34aa6b5c5a16c8addd220d462d85",
+   "commit": "0547619c02b9306b803ac64f9a8f389963e61815",
    "pin": "tag",
    "check": "unchecked",
    "reason": "no check ran",
-   "date": "2026-11-22"
+   "date": "2026-11-23"
   },
   {
    "id": "mc1",
@@ -8317,6 +8673,26 @@
    "check": "unchecked",
    "reason": "no check ran",
    "date": "2026-11-19"
+  },
+  {
+   "id": "mvance",
+   "version": "2.8.1",
+   "repo": "bk40-home/M-vance",
+   "commit": "1c29fe2e17946d04ef0223b1b9ad8fde3472e479",
+   "pin": "tag",
+   "check": "unchecked",
+   "reason": "no check ran",
+   "date": "2026-11-23"
+  },
+  {
+   "id": "mvaneyard",
+   "version": "0.15",
+   "repo": "Enkerli/mvane-yard",
+   "commit": "6413660730cfecaa93f1f4aea34480fc809a3f87",
+   "pin": "provenance",
+   "check": "diverges",
+   "reason": "spectrum r=0.433 (chord)",
+   "date": "2026-11-23"
   },
   {
    "id": "mycelium",
@@ -8477,6 +8853,16 @@
    "check": "unchecked",
    "reason": "no check ran",
    "date": "2026-11-19"
+  },
+  {
+   "id": "prophet67",
+   "version": "1.0",
+   "repo": "swtdr34mz-afk/PROPHET-67",
+   "commit": "3b3080ad21e570dcf59e5b3fc2a805f7c63acbf4",
+   "pin": "tag",
+   "check": "diverges",
+   "reason": "screen boot 16.9; screen chord 16.9; screen play 16.9",
+   "date": "2026-11-23"
   },
   {
    "id": "pulhra",
@@ -8750,13 +9136,13 @@
   },
   {
    "id": "textura",
-   "version": "0.2.9",
+   "version": "0.3.0",
    "repo": "leonardoMirabal/textura",
-   "commit": "ae6107eae97fc089e0564e83679d13bcb0a14017",
+   "commit": "cbce2564c362592f286c293c8096bf272805d395",
    "pin": "tag",
    "check": "unchecked",
    "reason": "no check ran",
-   "date": "2026-11-19"
+   "date": "2026-11-23"
   },
   {
    "id": "tonitor",
@@ -8807,6 +9193,16 @@
    "check": "diverges",
    "reason": "level +6.0 dB (play)",
    "date": "2026-11-19"
+  },
+  {
+   "id": "viber",
+   "version": "1.2",
+   "repo": "ant25fr/viber",
+   "commit": "3ecf9fb4aa617d25b185abc6aafebce560a2dce4",
+   "pin": "tag",
+   "check": "diverges",
+   "reason": "screen boot 14.4; screen chord 21.7; screen play 14.6",
+   "date": "2026-11-23"
   },
   {
    "id": "vnl1",
