@@ -186,8 +186,11 @@ def main():
             reason = "; ".join(expression_errors or why) if not ok else "no platform built: " + json.dumps(
                 {t: r.get("stage") for t, r in b["results"].items()})
             if entries.get(fid, {}).get("commit") == pin["commit"] and expressive is None and not expression_errors:
-                entries[fid] = without_caps(entries[fid])   # (an ordinary rebuild that failed: keep the published
-                continue                                    # entry, but no caps once its firmware has no expression)
+                kept = without_caps(entries[fid])   # (an ordinary rebuild that failed: keep the published entry,
+                if kept["assets"]:                   # without caps once its firmware has no expression; if nothing
+                    entries[fid] = kept              # is left to download, it goes to tried)
+                    continue
+                del entries[fid]
             tried[fid] = {**base, "check": "expression-failed" if expression_errors else check,
                           "reason": reason[:300], "date": today}
             continue

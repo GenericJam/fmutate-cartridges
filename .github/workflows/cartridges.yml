@@ -82,8 +82,8 @@ jobs:
         run: |
           set -f
           if [ "$REINDEX" = "true" ]; then ids="[]"
-          elif [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all 2>plan.txt)
-          else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS 2>plan.txt); fi
+          elif [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all 2>plan.txt) || { cat plan.txt >&2; exit 1; }
+          else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS 2>plan.txt) || { cat plan.txt >&2; exit 1; }; fi
           touch plan.txt; cat plan.txt >&2
           echo "reindex=${REINDEX:-false}" >> "$GITHUB_OUTPUT"
           chunks=$(python3 -c 'import json, sys; ids = json.loads(sys.argv[1]); n = 150; print(json.dumps([{"n": i // n + 1, "ids": json.dumps(ids[i:i+n])} for i in range(0, len(ids), n)]))' "$ids")
