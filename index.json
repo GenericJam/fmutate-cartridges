@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "generated": "2026-11-23T17:44:45Z",
+ "generated": "2026-11-23T17:54:19Z",
  "engine_abi": 1,
  "hub_updated": "2026-11-23 15:59 UTC",
  "firmwares": [
@@ -1922,6 +1922,18 @@
      "sha256": "c0f980f5a0ef3f48611b4780fa90c267da3538ef678424bf91e12dbc801b2c12",
      "size": 1410840,
      "sig": "h4xlN2LEwk+r5nzE3wpl+tb24DkTd/iKHZc8EnTNpNUzcWBBDFyZPz57sFcF5jmgvh3DEpc5D57EomHN8icxDg=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_duell-1.3.7-ios-device-8c63afd72a89.a",
+     "sha256": "8c63afd72a89fb684ff0a07c17b8d165178a80b73b1846202434f13d0a1ff412",
+     "size": 1715112,
+     "sig": "dKqAbzlXOKTx53tnhtcN5Yk/oXZeZljhuEkFR/MUd1Xq972g4WKl55YHOg0VHCiQi5fB96c0R/Aqi0V3nR/GAQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_duell-1.3.7-ios-sim-fcc6d06734b8.a",
+     "sha256": "fcc6d06734b86da361aaade5d8cbbe3fc91bcf465770ea823a77b4f72d6af82b",
+     "size": 1733912,
+     "sig": "irpM7C7A07ShfoEF0GRdfJQKrQ3v3fmVBfp4Dci3+0R8qBnskG+LRF1ozrO8RuP2Ob4tmOgIIeY8cSwRx9K6Bw=="
     }
    }
   },
@@ -2697,6 +2709,18 @@
      "sha256": "b88a834d948946a42a3cc6418c14a848123844386b4df4e660d86e6d14f7af08",
      "size": 922120,
      "sig": "t3FrnKbtIH6Q69M9PdMuiJc+dwjdmdApj2GaNEa+bEEuT/87W1Q9T/ph7lbhq3POgSnS9dg5UrU+rpJQU85sAA=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fm1tonic-1.8c-ios-device-1a1310031f6e.a",
+     "sha256": "1a1310031f6e81322a7ff79b19de766d5886f3883d99d63d3d1e7cd53d79501f",
+     "size": 1096664,
+     "sig": "WDu7iHFW7K+T6M68uPfgk+XVzQV4Ksegl8ffOjeTnG1CNvRlEkUFFVn1hl4m5KZQpY8Ut5QaaiAQLdTybaW3AQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fm1tonic-1.8c-ios-sim-3fe7c5b5905a.a",
+     "sha256": "3fe7c5b5905a0572a16d86790efd1a9e2b5434eb696a4a68ff5374d49af1db19",
+     "size": 1098648,
+     "sig": "kY/9XxeKSqo5N+Ew1Kd5eL3sXLxiFIUT4tIdCnB0rEOQGLO/YewqIjlxBgpvRZLiBz8CJSkr1/j3lgDmo8ZPDg=="
     }
    }
   },
@@ -5929,6 +5953,18 @@
      "sha256": "d8ecd4e1edd12c5e8aff7589c8f2b7d5544f3b0a7837a51e5604bdacd467d1a9",
      "size": 1810296,
      "sig": "TU1h2GvABEH+mM+vEhxTGuG7js39Oo9kSKzjXQdc+FVe8/ya56sTAQMLAgIftCOLhd2AlgRV+mmbaxWB6S8FAQ=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quantumgammawave-1.8.9-ios-device-966d5d3d4148.a",
+     "sha256": "966d5d3d41482d75c7601037fbb544caeb95c6b6c1414fb0b31b2edab12176ec",
+     "size": 2204496,
+     "sig": "FWYIGhsQ6aJqmIEPnti7ARyKd+bCAUpiSkLqLhAQ9+xXiLy2h9z3ebseCgdRKdqCnlOvM+Emxik9+X+c4rGOAQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_quantumgammawave-1.8.9-ios-sim-27ea4d94bc67.a",
+     "sha256": "27ea4d94bc6795ff6921060f01e289928a65fd7b7e3665233645c367b5514204",
+     "size": 2219624,
+     "sig": "x+Ex4i+dZrRpPPNnPJlWHI9FagNUsKAyyl+Wn7x4XEgOt5Dc8SSorgTNh+dfrLmwpxc0UXn3tedaegDaXbvRDQ=="
     }
    }
   },
@@ -6606,6 +6642,18 @@
      "sha256": "9d054e6beb0b1891f4bf24467034d798dc4d4f2f4ad81e981780916e1e319a23",
      "size": 1641048,
      "sig": "nKrMxPw0AkCF9jN3vkWvjxobRc5P67fxH66zBpI/XsD4wMmix/owzd4SS4RSBXIuxqIEMqujprWVKWMERnygBg=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sillage-2.2.1-ios-device-066ea323f96f.a",
+     "sha256": "066ea323f96fdf97a1c3277c30803be659c74a52b10f04aa38017ef8e9f8d372",
+     "size": 1949904,
+     "sig": "N9ntDF0Ivzk35q96jKo3hB4KZvRb0PdDfuoZPT+JImpYHSEVbJCAIzWf9ZookQxNQihXbhQjlaotn9vZqnRrDQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sillage-2.2.1-ios-sim-cd462d486563.a",
+     "sha256": "cd462d486563df210839156c3efa32f41294558d7403c258e9218b4b76ec29b0",
+     "size": 1960832,
+     "sig": "hqvj2w3hPoJZOkQcVVmxIh4tlHJ04+WhBcrRJPkrrK4uYekDX7t02u4JclHFgtTaBOdfb+WQLhcZwD9qWgIUDg=="
     }
    }
   },
@@ -6647,6 +6695,18 @@
      "sha256": "7602120eb08a084ae0417ade20d9b1e92b271321e2ce01d2a8172e899d17cab4",
      "size": 330928,
      "sig": "Tc78lXWGmb6cnowD3XIejaecPGr876iQOP4S04ppamkwe5SzOUkbRphqgiRB9PUEQ66wB+febH7FRWHB4MuiCA=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sixmachines-0.1.5-ios-device-ebcd798da5e4.a",
+     "sha256": "ebcd798da5e43a233c3353792a603db90c1689a6118e65d76cb1d3b83540f74b",
+     "size": 370968,
+     "sig": "YXR7bukB4AWEY1vSjNDVtYHMhAxcQSRsuCh6zF+7Qq1M5Cvd+Nalk+hehuK254h1ncakOkfhcR4AUOkZxM1cAg=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_sixmachines-0.1.5-ios-sim-715cb781cfd3.a",
+     "sha256": "715cb781cfd3a800f23c62e4b8428583ae09e58105dafbe890b6a4d05651127c",
+     "size": 371352,
+     "sig": "7+GTTQ7cik1h2bB7Jm6lln3Z1iQsqQp1TDR2x2bJaudn0uqa7Vse60EW86gZMD132NeX5hQQeQvuYd62pA6WDw=="
     }
    }
   },
@@ -6888,6 +6948,18 @@
      "sha256": "829e41437b733128962dd7a500e9a9abae4c9b13da46cf367418e54769604fd1",
      "size": 432120,
      "sig": "B7QEjnQsczZl+ezFVc45YjOpzxVSaSB2cxILvQSTwRdI+4xr4a7P+GAofdsSltjeDusouZpBIUB7chlC9ldzBw=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_strangersynth-0.7.0-ios-device-cb7cef0ed2ba.a",
+     "sha256": "cb7cef0ed2ba315467a0c89393208ebe5fec956dee32c4c8925987daf5352c4c",
+     "size": 468312,
+     "sig": "vvcGMhV0+vZP8QXmEtDAiioksruIpKXKp0evPLgXISjefGQf2yltICCn6ch8K3uVJ3vowmFzyQW+/doFMqZ5Dg=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_strangersynth-0.7.0-ios-sim-8306ff9ba831.a",
+     "sha256": "8306ff9ba8316a19cbfe3a69363ba97c943e843bb2af28b1d494482e44e5ba34",
+     "size": 472968,
+     "sig": "uBpBtyiVtg4yri76a8fuyV9khvQ2vPfwqUXgqq1osFUI4/ipKYLSa5E5zJcMNL4f8811KkyvsqR6HcXzkHanAA=="
     }
    }
   },
