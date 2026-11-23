@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""The parity gate between the workflow's Android and iOS jobs: which of this run's firmwares passed the check against
-the emulator (publish.py's rule: `match`, `silent`, or accepted in overrides.json), as a JSON list on stdout, so iOS
-(macOS runners, the scarce ones) builds only what will be published. A per-firmware table goes to stderr.
+"""Gate between Android and iOS jobs: firmwares with passing parity (or a parity accept override),
+plus current, non-overridable expression proof where configured. Prints a JSON list so scarce macOS
+runners build only what can be published; a per-firmware table goes to stderr.
 
     python3 gate.py --artifacts DIR
 """
@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from publish import PUBLISHABLE, collect  # noqa: E402
 from report import verdict  # noqa: E402
+from expression_config import proof_errors  # noqa: E402
 
 
 def main():
@@ -30,8 +31,10 @@ def main():
             continue
         check, why = verdict(b["verify"], (host.get("recipe") or {}).get("recipe")) if b["verify"] else \
             ("unchecked", ["no check ran"])
-        ok = check in PUBLISHABLE or fid in ov.get("accept", {})
-        print(f"{fid}: {check}{'' if ok else ' (not published): ' + '; '.join(why)[:160]}", file=sys.stderr)
+        _, expression_errors = proof_errors(fid, pins[fid]["commit"], b["results"], b["verify"], b["files"], HERE)
+        ok = (check in PUBLISHABLE or fid in ov.get("accept", {})) and not expression_errors
+        print(f"{fid}: {check}{'' if ok else ' (not published): ' + '; '.join(expression_errors or why)[:160]}",
+              file=sys.stderr)
         if ok:
             passed.append(fid)
     print(json.dumps(passed))

@@ -30,6 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
+from expression_config import entry, identity
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent                                        # (the repository)
 CAT = Path(os.environ.get("FM1_CATALOG_DIR") or ROOT / "work")
@@ -286,6 +287,19 @@ def compare(n, e):
             out[f"screen_diff_{s}"] = round(float(np.abs(rgb(n[2][s]).astype(int) - rgb(e[2][s]).astype(int)).mean()), 1)
     return out
 
+def expression_check(fid, cart):
+    """Run the offline native-only checks; never grant the stock emulator expressive capabilities."""
+    try:
+        if entry(fid, HERE) is None:
+            return None
+        identity(fid, PINS[fid]["commit"], HERE)
+        if cart.resolve() != (CAT / "out/host" / f"libcart_{fid}.so").resolve():
+            raise ValueError("expression checks require the built host cartridge at its standard path")
+        from expression_verify import check
+        return check(fid, Engine)
+    except Exception as ex:
+        return {"ok": False, "error": str(ex)[-600:]}
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -315,6 +329,9 @@ def main():
             rep["emu_error"] = str(ex)[-600:]
     if n and e:
         rep["compare"] = compare(n, e)
+    expression = expression_check(fid, cart)
+    if expression is not None:
+        rep["expression"] = expression
     try:
         from PIL import Image
         for tag, r in (("native", n), ("emu", e)):
@@ -328,7 +345,8 @@ def main():
           + (f" chord {n[0]['chord']['rms_db']} play {n[0]['play']['rms_db']} dB x{n[0]['speed_x']}" if n else "")
           + (f" | emu chord {e[0]['chord']['rms_db']} play {e[0]['play']['rms_db']} dB" if e else "")
           + (f" | {c.get('window')} dL {c.get('level_diff_db')} dB, spec {c.get('spectrum_corr')}, screens "
-             f"{c.get('screen_diff_boot')}/{c.get('screen_diff_chord')}/{c.get('screen_diff_play')}" if c else ""))
+             f"{c.get('screen_diff_boot')}/{c.get('screen_diff_chord')}/{c.get('screen_diff_play')}" if c else "")
+          + (f" | expression {'ok' if expression.get('ok') is True else 'FAILED'}" if expression else ""))
 
 if __name__ == "__main__":
     main()

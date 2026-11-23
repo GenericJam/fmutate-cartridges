@@ -24,7 +24,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import deps  # noqa: E402
-from common import CAT, HERE, SRC, sh  # noqa: E402
+from common import CAT, HERE, PINS, SRC, sh  # noqa: E402
+from expression_config import ExpressionError, identity  # noqa: E402
 
 RECIPES = {}
 for _p in sorted((HERE / "recipes").glob("[a-z]*.py")):
@@ -51,6 +52,17 @@ def build(fid, target):
     d = SRC / fid
     if not d.is_dir():
         res["stage"] = "fetch"
+        return res, log
+    try:
+        expressive = identity(fid, PINS[fid]["commit"], HERE)
+        if expressive:
+            source_pin = (d / ".pin").read_text().split()
+            if not source_pin or source_pin[0] != PINS[fid]["commit"]:
+                raise ExpressionError(f"{fid}: fetched source does not match the expression pin")
+            res["expression"] = expressive
+    except (ExpressionError, OSError) as ex:
+        res["stage"] = "expression"
+        log.append(str(ex))
         return res, log
     os.environ.update(deps.env(fid, d))                # (a dependency's directory as the firmware's build reads it)
     r = recipe(d, fid)

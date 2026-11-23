@@ -1,4 +1,4 @@
-# Reusable workflow: one isolated Linux build + parity-check + Android-ABIs job per firmware.
+# Reusable workflow: one isolated Linux build + parity/expression checks + Android-ABIs job per firmware.
 # Called in chunks of <=150 by cartridges.yml to stay under GitHub Actions' 256-job matrix cap.
 name: build-android
 
@@ -54,7 +54,7 @@ jobs:
         with: { ndk-version: "${{ env.NDK_VERSION }}", add-to-path: false }
       - name: Fetch
         run: for _ in 1 2 3; do sh pipeline/fetch.sh "$ID" | tee fetch.log; grep -q "FETCH FAILED" fetch.log || break; sleep 20; done
-      - name: Build (this computer) and check against the emulator
+      - name: Build (this computer), parity and offline expression checks
         run: |
           python3 pipeline/build.py "$ID" --target host || true
           [ -f "work/out/host/libcart_$ID.so" ] && python3 pipeline/verify.py "$ID" || true
@@ -69,11 +69,17 @@ jobs:
           from pathlib import Path
           sys.path.insert(0, "pipeline")
           from report import verdict
+          from expression_config import proof_errors
           fid, w = os.environ["ID"], Path("work")
           res = {t: json.loads(p.read_text()) for p in w.glob(f"results/{fid}.*.json") for t in [p.name[len(fid) + 1:-5]]}
           v = w / "verify" / f"{fid}.json"
           rec = ((res.get("host") or {}).get("recipe") or {}).get("recipe")
-          check = verdict(json.loads(v.read_text()), rec) if v.exists() else ("unchecked", [])
+          report = json.loads(v.read_text()) if v.exists() else None
+          check = verdict(report, rec) if report else ("unchecked", [])
+          pins = json.loads(Path("pipeline/pins.json").read_text())
+          expression, errors = proof_errors(fid, pins[fid]["commit"], res, report)
+          if expression is not None or errors:
+              print(f"{fid}: expression {'FAILED: ' + '; '.join(errors) if errors else 'ok'}")
           print(f"{fid}: {check[0]} {'; '.join(check[1])[:200]} | " + ", ".join(
               f"{t} {'ok' if r.get('ok') else 'failed at ' + str(r.get('stage'))}" for t, r in sorted(res.items())))
           EOF

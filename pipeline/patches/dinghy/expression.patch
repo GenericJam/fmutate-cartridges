@@ -1,0 +1,249 @@
+FMutate expressive controls for Dinghy (GPL-3.0-only, preserving upstream attribution).
+
+Adds volatile MIDI pitch bend (0xE0, +-2 semitones, center 8192, endpoints 0/16383,
+combined with SMK-37 physical wheel bend, whose stock curve is kept exactly; panel keys follow the bend of the
+channel they send on) and per-note square-law MIDI polyphonic
+aftertouch (0xA0, 127 unity, 0 silent) via independent per-voice smoothed Q15 gain
+with channel/note isolation, new-note/retrigger/reuse reset, and CC120/121/123 recovery.
+Neutral sound without pressure/bend is unchanged and persisted settings are untouched.
+
+diff --git a/firmware/src/dinghy.c b/firmware/src/dinghy.c
+--- a/firmware/src/dinghy.c
++++ b/firmware/src/dinghy.c
+@@ -24,15 +24,53 @@
+ 
+ /* ---- the sound (runs in the audio ISR: keep it short, no flash, no screen) */
+ #define NV 4u                                   /* voices */
++#define KEY_CH 16u                              /* non-MIDI voice channel (panel keys, SMK pads/outer keys) */
+ static struct {
+     volatile uint32_t inc;                      /* phase step per frame: f * 2^32 / 44100 (unbent) */
+     volatile int32_t gate;                      /* target level, Q15: 0 = released */
++    volatile uint32_t at_q15;                   /* polyphonic aftertouch target gain, Q15 (0..32767; 32767 = unity) */
++    volatile uint32_t ch;                       /* owner MIDI channel 0..15, or KEY_CH for panel keys */
+     int32_t amp;                                /* the level now: glides to gate, no clicks */
++    int32_t at_cur;                             /* smoothed aftertouch gain, Q15: glides to at_q15, no clicks */
+     uint32_t ph, age;
+     uint8_t note;
+ } voice[NV];
+-static volatile uint32_t bend_q16 = 65536;      /* the pitch wheel: the steps times this / 65536 */
++/* per-channel pitch bend (0..15 MIDI, 16 panel/SMK wheel): phase step * bend_q16 / 65536 */
++static volatile uint32_t bend_q16[17] = {
++    65536u, 65536u, 65536u, 65536u, 65536u, 65536u, 65536u, 65536u,
++    65536u, 65536u, 65536u, 65536u, 65536u, 65536u, 65536u, 65536u, 65536u
++};
++static int32_t midi_bend[16], wheel_bend;       /* volatile performance state: 1/4096 semitone (+-8192 = +-2 st) */
++static uint32_t key_bend_ch;                    /* the MIDI channel whose bend the panel keys follow: the one they send on */
+ 
++static uint32_t bend_to_q16(int32_t bd)         /* 1/4096 semitone (+-8192 = +-2 st) -> Q16 ~2^(s/12) */
++{
++    int32_t s2;
++    if (bd < -8192) bd = -8192;
++    else if (bd > 8192) bd = 8192;
++    s2 = (bd * bd) >> 12;
++    return (uint32_t)(65536 + ((bd * 3786) >> 12) + ((s2 * 109) >> 12) + ((((s2 * bd) >> 12) * 2) >> 12));
++}
++static uint32_t wheel_q16(int32_t bd)          /* the wheel alone: the stock curve, exactly (~2^(s/12)) */
++{
++    return (uint32_t)(65536 + (bd * 3785 >> 12) + (((bd * bd) >> 12) * 109 >> 12));
++}
++static uint32_t channel_q16(int32_t midi)       /* a MIDI bend (+ the wheel): the closer curve; none: stock */
++{
++    return midi ? bend_to_q16(midi + wheel_bend) : wheel_q16(wheel_bend);
++}
++static void bend_update(uint32_t ch)
++{
++    if (ch < 16u) bend_q16[ch] = channel_q16(midi_bend[ch]);
++    if (ch >= 16u || ch == key_bend_ch)
++        bend_q16[KEY_CH] = channel_q16(midi_bend[key_bend_ch]);
++}
++static uint32_t at_gain_q15(uint32_t val)       /* square-law poly pressure: 0 silent, 127 unity, (val/127)^2 Q15 */
++{
++    if (val >= 127u) return 32767u;
++    return (val * val * 133141u) >> 16;
++}
++
+ static int32_t sine(uint32_t ph)                /* a full cycle over 2^32 -> -32767..32767 (a refined parabola, ~0.1 %) */
+ {
+     int32_t x = (int32_t)ph >> 16, ax = x < 0 ? -x : x, y, ay;
+@@ -46,21 +84,35 @@
+ {
+     uint32_t v, i;
+     for (v = 0; v < NV; v++) {
+-        uint32_t ph = voice[v].ph, step = (uint32_t)(((uint64_t)voice[v].inc * bend_q16) >> 16);   /* (int64 multiply: fine) */
+         int32_t amp = voice[v].amp, g = voice[v].gate;
++        uint32_t ch, bq, ph, step;
++        int32_t at, at_g;
+         if (!amp && !g)
+             continue;                           /* silent: costs nothing */
++        ch = voice[v].ch;
++        bq = bend_q16[ch < 16u ? ch : KEY_CH];
++        ph = voice[v].ph;
++        step = (uint32_t)(((uint64_t)voice[v].inc * bq) >> 16);   /* (int64 multiply: fine) */
++        at = voice[v].at_cur;
++        at_g = (int32_t)voice[v].at_q15;
++        if (!amp)
++            at = at_g;                          /* fresh note from silence: start at target pressure */
+         for (i = 0; i < n; i++) {
+             int32_t s;
+             if (amp < g) { amp += 48; if (amp > g) amp = g; }        /* attack ~5 ms */
+             else if (amp > g) { amp -= 6; if (amp < g) amp = g; }    /* release ~45 ms */
++            if (at < at_g) { at += 256; if (at > at_g) at = at_g; }  /* pressure glide ~2.9 ms */
++            else if (at > at_g) { at -= 256; if (at < at_g) at = at_g; }
+             ph += step;
+             s = (sine(ph) * amp) >> 15;
++            if (at < 32767)
++                s = (s * at) >> 15;
+             out[2u * i] += s;                   /* L */
+             out[2u * i + 1u] += s;              /* R */
+         }
+         voice[v].ph = ph;
+         voice[v].amp = amp;
++        voice[v].at_cur = at;
+     }
+ }
+ 
+@@ -70,28 +122,49 @@
+     1153098554u, 1221665363u, 1294309365u, 1371273005u, 1452813141u, 1539201906u};
+ static uint32_t ages, last_note = 255;
+ 
+-static void play(uint32_t note, uint32_t vel)
++static void play(uint32_t note, uint32_t vel, uint32_t ch)
+ {
+     uint32_t v, pick = 0, best = 0xFFFFFFFFu;
+     if (note > 127u || !vel) return;
+-    for (v = 0; v < NV; v++) {                  /* the same note, else a free voice, else the oldest */
+-        uint32_t score = voice[v].note == note && voice[v].gate ? 0u
++    for (v = 0; v < NV; v++) {                  /* the same note/channel, else a free voice, else the oldest */
++        uint32_t score = voice[v].note == note && voice[v].ch == ch && voice[v].gate ? 0u
+                        : voice[v].gate ? 0x80000000u + voice[v].age : (uint32_t)voice[v].amp + 1u;
+         if (score < best) { best = score; pick = v; }
+     }
+     voice[pick].note = (uint8_t)note;
++    voice[pick].ch = ch;
+     voice[pick].age = ++ages;
+     voice[pick].inc = INC_C9[note % 12u] >> (10u - note / 12u);
++    voice[pick].at_q15 = 32767u;                /* new note / retrigger / reuse: full pressure until 0xA0 */
+     voice[pick].gate = (int32_t)(vel * 90u);    /* 127 -> 11430: four voices stay under full scale */
+     last_note = note;
+ }
+-static void stop(uint32_t note)
++static void stop(uint32_t note, uint32_t ch)
+ {
+     uint32_t v;
+     for (v = 0; v < NV; v++)
+-        if (voice[v].note == note)
++        if (voice[v].note == note && voice[v].ch == ch)
+             voice[v].gate = 0;
+ }
++static void pressure(uint32_t ch, uint32_t note, uint32_t val)
++{
++    uint32_t v, g = at_gain_q15(val);
++    if (note > 127u) return;
++    for (v = 0; v < NV; v++)
++        if (voice[v].note == note && voice[v].ch == ch && (voice[v].gate || voice[v].amp))
++            voice[v].at_q15 = g;
++}
++static void midi_reset_ch(uint32_t ch, int release_notes)
++{
++    uint32_t v;
++    midi_bend[ch] = 0;
++    bend_update(ch);
++    for (v = 0; v < NV; v++) {
++        if (voice[v].ch != ch) continue;
++        if (release_notes) voice[v].gate = 0;
++        else if (voice[v].gate) voice[v].at_q15 = 32767u;
++    }
++}
+ static int quiet(void)                          /* nothing sounds, not even a release */
+ {
+     uint32_t v;
+@@ -194,8 +267,20 @@
+         if (st == 0xFBu) { clk_run = 1; continue; }              /* CONTINUE */
+         if (st == 0xFCu) { clk_run = 0; continue; }              /* STOP */
+         if (set.ch && (st & 15u) != set.ch - 1u) continue;      /* not our channel */
+-        if (ty == 0x90u && d2) { play(d1, d2); midi_src = (uint32_t)src; }
+-        else if (ty == 0x80u || ty == 0x90u) stop(d1);
++        {
++            uint32_t ch = st & 15u;
++            if (ty == 0x90u && d2) { play(d1, d2, ch); midi_src = (uint32_t)src; }
++            else if (ty == 0x80u || ty == 0x90u) stop(d1, ch);
++            else if (ty == 0xA0u) pressure(ch, d1 & 0x7Fu, d2 & 0x7Fu);
++            else if (ty == 0xE0u) {
++                int32_t v = (int32_t)((uint32_t)(d1 & 0x7Fu) | ((uint32_t)(d2 & 0x7Fu) << 7)) - 8192;
++                midi_bend[ch] = v >= 0 ? (v * 8192) / 8191 : v;
++                bend_update(ch);
++            } else if (ty == 0xB0u) {
++                if (d1 == 120u || d1 == 123u) midi_reset_ch(ch, 1);
++                else if (d1 == 121u) midi_reset_ch(ch, 0);
++            }
++        }
+     }
+ }
+ static void app_idle(void)
+@@ -216,6 +301,7 @@
+ #endif
+     if (settings_load(&set, sizeof set) || (int8_t)set.oct < -2 || (int8_t)set.oct > 2 || set.ch > 16u)
+         set.oct = 0, set.ch = 0;
++    key_bend_ch = set.ch ? set.ch - 1u : 0u;
+ 
+     lcd_fill(0, 0, 240, 240, C_BLACK);
+     draw_text_box(0, 18, 240, &FONT_L, APP_NAME, C_ACC, 1);
+@@ -237,25 +323,29 @@
+ #else
+             uint32_t vel = 100;
+ #endif
+-            if (down >> k & 1u) { held[k] = (uint8_t)(base + k); play(held[k], vel); midi_send(0x90u | out_ch, held[k], vel); }
+-            if (up >> k & 1u) { stop(held[k]); midi_send(0x80u | out_ch, held[k], 0); }
++            if (down >> k & 1u) { held[k] = (uint8_t)(base + k); play(held[k], vel, KEY_CH); midi_send(0x90u | out_ch, held[k], vel); }
++            if (up >> k & 1u) { stop(held[k], KEY_CH); midi_send(0x80u | out_ch, held[k], 0); }
+         }
+ #if BOARD_SMK37
+         while ((e = smk_extkey_take()) >= 0) {  /* the keys left and right of the FM-1's 27: key << 8 | velocity */
+             uint32_t key = (uint32_t)e >> 8, vel = (uint32_t)e & 0x7Fu;
+             if (key >= FM1_NKEY) continue;
+-            if (vel) { ext_note[key] = (uint8_t)(base + key - SMK_KEY_F3); play(ext_note[key], vel); midi_send(0x90u | out_ch, ext_note[key], vel); }
+-            else if (ext_note[key]) { stop(ext_note[key]); midi_send(0x80u | out_ch, ext_note[key], 0); ext_note[key] = 0; }
++            if (vel) { ext_note[key] = (uint8_t)(base + key - SMK_KEY_F3); play(ext_note[key], vel, KEY_CH); midi_send(0x90u | out_ch, ext_note[key], vel); }
++            else if (ext_note[key]) { stop(ext_note[key], KEY_CH); midi_send(0x80u | out_ch, ext_note[key], 0); ext_note[key] = 0; }
+         }
+         while ((e = smk_pad_take()) >= 0) {     /* a pad: hardware pad << 8 | velocity (0 = let go) */
+             uint32_t pad = ((uint32_t)e >> 8) & 15u, vel = (uint32_t)e & 0x7Fu;
+             uint32_t w = pad < 8u ? pad + 8u : pad - 8u;   /* bottom row = white keys 1-8, top row 9-16 */
+-            if (vel) { pad_note[pad] = (uint8_t)(base + WHITE[w]); play(pad_note[pad], vel); midi_send(0x90u | out_ch, pad_note[pad], vel); }
+-            else if (pad_note[pad]) { stop(pad_note[pad]); midi_send(0x80u | out_ch, pad_note[pad], 0); pad_note[pad] = 0; }
++            if (vel) { pad_note[pad] = (uint8_t)(base + WHITE[w]); play(pad_note[pad], vel, KEY_CH); midi_send(0x90u | out_ch, pad_note[pad], vel); }
++            else if (pad_note[pad]) { stop(pad_note[pad], KEY_CH); midi_send(0x80u | out_ch, pad_note[pad], 0); pad_note[pad] = 0; }
+         }
+         {
+             int32_t bd = smk_pw_bend(&wheel, fm1_in.wheel[0], fm1_ms);   /* 1/4096 semitone */
+-            bend_q16 = (uint32_t)(65536 + (bd * 3785 >> 12) + (((bd * bd) >> 12) * 109 >> 12));   /* ~2^(s/12) */
++            if (bd != wheel_bend) {
++                uint32_t c;
++                wheel_bend = bd;
++                for (c = 0; c <= 16u; c++) bend_update(c);
++            }
+         }
+ #endif
+ 
+@@ -264,9 +354,18 @@
+         if (b & (1u << BTN_OCT_UP) && oct < 2) { set.oct = (uint8_t)(oct + 1); dirty = 1; t_change = fm1_ms; }
+         if ((e = fm1_enc_take(ENC_PRESETS)) != 0) {   /* detents turned since the last call */
+             int32_t c = (int32_t)set.ch + e;
+-            set.ch = (uint8_t)(c < 0 ? 0 : c > 16 ? 16 : c);
+-            dirty = 1;
+-            t_change = fm1_ms;
++            uint8_t nch = (uint8_t)(c < 0 ? 0 : c > 16 ? 16 : c);
++            if (nch != set.ch) {
++                uint32_t i;
++                for (i = 0; i < 16u; i++) {
++                    if (nch && i != (uint32_t)(nch - 1u)) midi_reset_ch(i, 1);
++                }
++                set.ch = nch;
++                key_bend_ch = nch ? nch - 1u : 0u;
++                bend_update(KEY_CH);
++                dirty = 1;
++                t_change = fm1_ms;
++            }
+         }
+ 
+         midi_in();

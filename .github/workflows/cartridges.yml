@@ -2,7 +2,7 @@
 # in FMutate's emulator engine, and publishes the ones that match as signed release assets plus a signed index at
 # https://genericjam.github.io/fmutate-cartridges/index.json (gh-pages). One firmware per job: each job runs that
 # firmware's own build scripts, so no job holds a write token or the signing key, and publish.py takes only a job's
-# own firmware from its artifact. The daily run builds what the Hub changed since the published index.
+# own firmware from its artifact. The daily run builds changed Hub pins and expressive patch/manifest revisions.
 name: cartridges
 
 on:
@@ -134,7 +134,7 @@ jobs:
       ids: ${{ matrix.chunk.ids }}
 
   gate:
-    # the parity gate: iOS builds only what passed the check
+    # parity + non-overridable expression gate: iOS builds only what passed both checks
     needs: [plan, engine, android]
     if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && (needs.android.result == 'success' || needs.android.result == 'failure')
     runs-on: ubuntu-24.04

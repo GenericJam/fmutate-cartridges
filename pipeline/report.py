@@ -20,6 +20,8 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from expression_config import proof_errors
+
 HERE = Path(__file__).resolve().parent
 CAT = Path(os.environ.get("FM1_CATALOG_DIR") or HERE.parent / "work")
 PINS = json.loads((HERE / "pins.json").read_text())
@@ -98,6 +100,13 @@ def main():
             row["compare"] = v.get("compare")
             row["boot_ms"] = {"native_first_screen": n.get("first_screen_fw_ms"),
                               "emu_first_screen": (v.get("emu") or {}).get("first_screen_fw_ms")}
+            host_path = CAT / "results" / f"{fid}.host.json"
+            host = r if a.target == "host" else json.loads(host_path.read_text()) if host_path.exists() else {}
+            expressive, errors = proof_errors(fid, pin["commit"], {"host": host, a.target: r}, v,
+                                               (a.target,), HERE)
+            if expressive is not None or errors:
+                row["expression"] = {**(expressive or {}), "ok": not errors, "errors": errors}
+                row["why"].extend("expression: " + error for error in errors)
         bp = CAT / "bench" / f"{fid}.json"
         if bp.exists():
             row["bench"] = json.loads(bp.read_text())

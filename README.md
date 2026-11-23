@@ -15,7 +15,9 @@ FMutate's [docs/decisions/2026-11-14-native-catalog.md](https://github.com/Gener
   `gh-pages` branch; a stable URL with ETags, which FMutate's loader polls). Schema 1: per firmware its id, Hub
   version, source repository and pinned commit, licence, how it built (`clean`, `shims`, `patch`), the parity numbers
   and, per platform (`android-arm64-v8a`, `android-x86_64`, `android-armeabi-v7a`, `ios-device`, `ios-sim`), the asset
-  URL, SHA-256, size and signature. Firmwares that were tried and not published are listed under `tried` with the reason.
+  URL, SHA-256, size, signature and optional expressive `caps`. Capabilities belong to that exact signed asset, not
+  the firmware id: an older retained iOS asset does not inherit a new Android build's features. Firmwares that were
+  tried and not published are listed under `tried` with the reason.
 - **Assets**: GitHub Releases, one per run (`build-YYYYMMDD-<run>`, its re-runs adding to it; a run with more than 900
   cartridges continues in `...-2`, `...-3`: GitHub keeps at most 1000 assets in a release), each with that run's
   `pins.json`; a cartridge's file name ends in the start of its SHA-256, so no file an index names is ever replaced.
@@ -37,8 +39,9 @@ metric that isn't a finite number is `null`, and a check that has no number does
    `overrides.json` pin for that version, else the Hub's build provenance, else its source ref, else the release tag,
    else the default branch's HEAD on the day, flagged `head`; a version already pinned, in `pins.json` or in the
    published index, keeps its pin), and picks what is new or changed since the published index (`pipeline/plan.py`):
-   a pin already published or already tried is not built again. When nothing is new the run stops here, green, and
-   the published index stays as it is.
+   a pin already published or already tried is not built again, unless its configured expression revision changed.
+   That revision hashes the firmware's manifest entry and patch bytes, so a same-version expression rebuild is not
+   lost. When nothing is new the run stops here, green, and the published index stays as it is.
 2. **engine**: builds FMutate's native engine and emulator engine at a pinned FMutate commit (`pipeline/engine.sh`).
 3. **android** (one job per firmware, Linux; in batches of at most 150, `.github/workflows/_build-android.yml`, under
    GitHub's 256-job matrix limit): fetches the source at its pin (`pipeline/fetch.sh`, plus pinned
@@ -67,6 +70,43 @@ python3 pipeline/report.py                 # everything built so far: pipeline/r
 
 `FM1_CATALOG_DIR` (default `work/`) and `FM1_ENGINE_DIR` (default `engine/`) move the work and engine directories.
 
+## Native expression pilot
+
+`pipeline/expression.json` pins the source commit for **Dinghy**. Its native-only patch adds OberVave-style MIDI
+poly pressure (`0xAn`, key, level): 127 is unchanged unity, 64 is about one-quarter amplitude, and 0 silences that
+key. Pressure is a separate square-law gain; original note velocity, envelopes and presets are preserved, and
+ordinary notes without pressure keep their original level. It also gains the default ±2-semitone MIDI bend.
+
+**Skiff and Caravel are pending.** `pipeline/expression-pending/` holds their patches for Skiff 2.6 and Caravel
+0.13.0, which the Hub has since replaced (2.7, 1.1.1). Nothing applies them; both build stock until ported.
+Before re-adding them to the manifest: port each patch to the current pin, make expression ownership come only
+from the input paths (today a sequencer note on a held key's pitch inherits that key's pressure), and keep Caravel's
+per-key depth with the MIDI key across a Harmony remap of a held CHRD BUS chord. Caravel's **DRONE cells**
+deliberately ignore per-note gain: several keys excite one shared network/host voice.
+
+`verify.py` runs the neutral emulator comparison **and** `expression_verify.py`'s offline audio scenarios:
+real two-note isolation, square-law gain, silence/restoration, retrigger, channel ownership, measured bend (MIDI
+notes and the firmware's own keys) and panic recovery. For Skiff/Caravel it also compiles `expression_felucca.c`
+against the pinned source's real host harness (MONO/LEGATO/UNISON fallback, pedal/reset, chord tones, ARP octaves,
+a deferred engine switch, stolen slots); the gate requires that check for them. No audio device is opened.
+
+**Nothing else may change.** Every manifest entry must list `neutral` tests: commands from the firmware's own test
+suite (`run`, a shell command; `{shim}` becomes the native shims' compiler flags) and the files they write
+(`compare`). Each runs on a copy of the patched source and on a copy with `patches/<id>/expression.patch` reversed;
+both must exit 0 and every compared file must be byte-identical. Dinghy's are its four host scripts (default, MIDI,
+SMK-37, SMK-37 wheel and pads); they caught a patch that had quietly changed the stock wheel curve. Prefer tests
+that render audio over every preset (Felucca's golden renders). A manifest without them is refused.
+
+Publication requires all expression checks and matching host/platform build identities. A parity override
+cannot bypass missing, failed, incomplete or stale expression proof. An incompatible source pin fails closed
+until its patch is ported and verified. The signed asset receives `pitch_bend` and `note_pressure` only after
+that proof; stock Hub packages and emulator entries receive neither from this manifest.
+
+```sh
+python3 pipeline/expression_verify.py dinghy  # expression only; after its host build
+```
+
+
 ## Tests
 
 `tests/` checks the pipeline's own logic with pytest: the index is strict JSON, a run's assets split over releases
@@ -91,7 +131,8 @@ in this order of preference:
    unpinned (a `git clone` of a branch, a download) or what its repository lacks, as a GitHub repository at a full
    commit SHA placed at a path in the tree, or another Hub firmware. Builds never fetch anything unpinned.
 4. **A per-firmware patch** (`pipeline/patches/<id>/*.patch`, applied with `patch -p1`): small, with a header saying
-   why, only when the firmware's own source can't build on a computer.
+   why. Build-compatibility patches preserve stock behavior; intentional native expression extensions additionally
+   require a pinned manifest entry and the non-overrideable expression gate described above.
 5. **`pipeline/overrides.json`**: `{"skip": {id: reason}}` not to build; `{"accept": {id: reason}}` to publish a
    firmware that differs from the emulator for a reason a person checked (for example the emulator never boots it);
    `{"pin": {id: {"version", "commit", "why"}}}`: the commit a version's package was built from, found by a person
@@ -108,7 +149,8 @@ shim, patch and dependency pin that went into it. That is the complete correspon
 fetchable here and at the authors' repositories. If any of it becomes unavailable, open an issue on this repository
 and we will provide it. Firmwares without a licence are not published (`overrides.json` `skip`).
 
-The pipeline itself (everything in this repository) is GPL-3.0, as FMutate (`LICENSE`).
+The pipeline itself (everything in this repository) is GPL-3.0 (`LICENSE`), including its firmware patches.
+FMutate's original application code is MIT; the firmware code keeps its authors' licences.
 
 ## Security model
 
