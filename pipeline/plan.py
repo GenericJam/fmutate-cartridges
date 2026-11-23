@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Which firmwares a CI run builds: those whose pin differs from the published index's (a new Hub entry, a new
-version, a new pin), plus any named; as a JSON list on stdout (a GitHub Actions matrix).
+"""Which firmwares a CI run builds: new versions/pins or changed expressive patch/manifest revisions,
+plus any named; as a JSON list on stdout (a GitHub Actions matrix).
 
     python3 plan.py [--index FILE] [--all] [id ...]
 
@@ -14,6 +14,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+from expression_config import ExpressionError, identity, matches
 
 HERE = Path(__file__).resolve().parent
 SAFE = re.compile(r"[a-z0-9][a-z0-9_.-]{0,63}")      # (ids go into job names and paths; the Hub's catalogue is input)
@@ -38,6 +40,13 @@ def main():
             if SAFE.fullmatch(k) and REPO.fullmatch(p.get("repo") or "") and SHA.fullmatch(p.get("commit") or "")}
     ov = json.loads((HERE / "overrides.json").read_text()) if (HERE / "overrides.json").exists() else {}
     skip = ov.get("skip", {})
+    expressions = {}
+    for fid, pin in list(pins.items()):
+        try:
+            expressions[fid] = identity(fid, pin["commit"], HERE)
+        except ExpressionError as ex:
+            print(f"plan: not building {fid}: {ex}", file=sys.stderr)
+            del pins[fid]
     if a.ids:
         todo = [i for i in dict.fromkeys(a.ids) if i in pins]
     elif a.all:
@@ -46,8 +55,13 @@ def main():
         idx = published(a.index)
         # (built already: published, or tried and not published; a firmware can be both, an older version
         # published and a newer one tried)
-        done = {(f["id"], f.get("commit"), f.get("version")) for f in idx.get("tried", []) + idx.get("firmwares", [])}
-        todo = [fid for fid, p in pins.items() if (fid, p["commit"], p["version"]) not in done]
+        done = idx.get("tried", []) + idx.get("firmwares", [])
+        # (an entry is current with the manifest's expression revision, or with none when the manifest has none:
+        # a firmware taken out of the manifest is rebuilt, so its published caps go)
+        todo = [fid for fid, p in pins.items() if not any(
+            f.get("id") == fid and f.get("commit") == p["commit"] and f.get("version") == p["version"]
+            and (matches(f.get("expression"), expressions[fid]) if expressions[fid] else not f.get("expression"))
+            for f in done)]
     print(json.dumps([i for i in todo if i not in skip]))
 
 

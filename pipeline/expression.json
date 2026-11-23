@@ -1,0 +1,22 @@
+{
+  "dinghy": {
+    "commit": "ea1b6bf5973b11f9b4b806d08155602aaa0b505e",
+    "caps": {"pitch_bend": true, "note_pressure": true},
+    "notes": [60, 66],
+    "bend_semitones": 2,
+    "neutral": [
+      {"name": "fm1_default",
+       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy",
+       "compare": ["build/host/dinghy.wav"]},
+      {"name": "fm1_midi",
+       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy tests/scripts/midi.txt",
+       "compare": ["build/host/dinghy.wav"]},
+      {"name": "smk37_default",
+       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37",
+       "compare": ["build/host/dinghy-smk37.wav"]},
+      {"name": "smk37_wheel_pads",
+       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37 tests/scripts/smk37.txt",
+       "compare": ["build/host/dinghy-smk37.wav"]}
+    ]
+  }
+}

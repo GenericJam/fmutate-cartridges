@@ -2,7 +2,7 @@
 # in FMutate's emulator engine, and publishes the ones that match as signed release assets plus a signed index at
 # https://genericjam.github.io/fmutate-cartridges/index.json (gh-pages). One firmware per job: each job runs that
 # firmware's own build scripts, so no job holds a write token or the signing key, and publish.py takes only a job's
-# own firmware from its artifact. The daily run builds what the Hub changed since the published index.
+# own firmware from its artifact. The daily run builds changed Hub pins and expressive patch/manifest revisions.
 name: cartridges
 
 on:
@@ -82,8 +82,9 @@ jobs:
         run: |
           set -f
           if [ "$REINDEX" = "true" ]; then ids="[]"
-          elif [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all)
-          else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS); fi
+          elif [ "$ALL" = "true" ]; then ids=$(python3 pipeline/plan.py --all 2>plan.txt) || { cat plan.txt >&2; exit 1; }
+          else ids=$(python3 pipeline/plan.py --index prev/index.json $IDS 2>plan.txt) || { cat plan.txt >&2; exit 1; }; fi
+          touch plan.txt; cat plan.txt >&2
           echo "reindex=${REINDEX:-false}" >> "$GITHUB_OUTPUT"
           chunks=$(python3 -c 'import json, sys; ids = json.loads(sys.argv[1]); n = 150; print(json.dumps([{"n": i // n + 1, "ids": json.dumps(ids[i:i+n])} for i in range(0, len(ids), n)]))' "$ids")
           count=$(python3 -c 'import json, sys; print(len(json.loads(sys.argv[1])))' "$ids")
@@ -93,6 +94,8 @@ jobs:
           echo "hub_updated=$(python3 -c 'import json; print(json.load(open("catalog.json"))["updated"])')" >> "$GITHUB_OUTPUT"
           echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
           echo "building ($count): $ids" >> "$GITHUB_STEP_SUMMARY"
+          # (what the plan left out and why, e.g. an expressive firmware whose Hub pin moved past its patch)
+          if [ -s plan.txt ]; then { echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: pins, path: pipeline/pins.json }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -134,7 +137,7 @@ jobs:
       ids: ${{ matrix.chunk.ids }}
 
   gate:
-    # the parity gate: iOS builds only what passed the check
+    # parity + non-overridable expression gate: iOS builds only what passed both checks
     needs: [plan, engine, android]
     if: always() && needs.plan.outputs.any == 'true' && needs.engine.result == 'success' && (needs.android.result == 'success' || needs.android.result == 'failure')
     runs-on: ubuntu-24.04

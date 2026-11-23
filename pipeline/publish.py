@@ -13,6 +13,9 @@ overrides.json "accept" names it with the reason a person checked; anything else
 the reason, so the next run doesn't build the same commit again. Firmwares not built in this run keep their entries
 from --prev, the published index (a file: the workflow reads the gh-pages branch's copy), whose signature (INDEX.sig)
 must verify against signing.pub.pem; --first is the one run with no index yet.
+Configured expressive firmware additionally needs successful current host expression proof and matching
+identities on every new platform asset. An accept override never bypasses this requirement; capability
+declarations come only from expression.json and are attached only to the newly verified assets.
 
 Writes DIST/assets/<release>/libcart_<id>-<version>-<platform>-<sha256[:12]>.<so|a> (a name per content, so a re-run
 adding to a release never replaces a file an index names) and DIST/index.json + index.json.sig, signed
@@ -37,6 +40,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from report import verdict  # noqa: E402
+from expression_config import proof_errors  # noqa: E402
 
 REPO = "GenericJam/fmutate-cartridges"
 PUBKEY = HERE / "signing.pub.pem"
@@ -122,6 +126,19 @@ def collect(art, pins):
     return built
 
 
+def without_caps(entry):
+    """A published entry once its firmware has left the expression manifest: its proof and every asset that
+    carries caps go (that binary had the features of a patch no longer vouched for)."""
+    return {**{k: v for k, v in entry.items() if k != "expression"}, "assets": kept_assets(entry, None)}
+
+
+def kept_assets(old, expressive):
+    """The published entry's assets a same-commit rebuild keeps: all of them while the firmware is expressive (each
+    keeps its own caps), else only those without caps."""
+    assets = old.get("assets", {})
+    return assets if expressive else {p: a for p, a in assets.items() if "caps" not in a}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--artifacts", required=True)
@@ -160,14 +177,22 @@ def main():
         recipe = host_r.get("recipe") or {}
         v = b["verify"]
         check, why = verdict(v, recipe.get("recipe")) if v else ("unchecked", ["no check ran"])
-        ok = check in PUBLISHABLE or fid in accept
+        expressive, expression_errors = proof_errors(fid, pin["commit"], b["results"], v, b["files"], HERE)
+        ok = (check in PUBLISHABLE or fid in accept) and not expression_errors
         base = {"id": fid, "version": pin["version"], "repo": pin["repo"], "commit": pin["commit"], "pin": pin["how"]}
+        if expressive:
+            base["expression"] = expressive
         if not ok or not b["files"]:
-            reason = "; ".join(why) if not ok else "no platform built: " + json.dumps(
+            reason = "; ".join(expression_errors or why) if not ok else "no platform built: " + json.dumps(
                 {t: r.get("stage") for t, r in b["results"].items()})
-            if entries.get(fid, {}).get("commit") == pin["commit"]:
-                continue                    # (a rebuild of what's published that failed this time: keep that)
-            tried[fid] = {**base, "check": check, "reason": reason[:300], "date": today}
+            if entries.get(fid, {}).get("commit") == pin["commit"] and expressive is None and not expression_errors:
+                kept = without_caps(entries[fid])   # (an ordinary rebuild that failed: keep the published entry,
+                if kept["assets"]:                   # without caps once its firmware has no expression; if nothing
+                    entries[fid] = kept              # is left to download, it goes to tried)
+                    continue
+                del entries[fid]
+            tried[fid] = {**base, "check": "expression-failed" if expression_errors else check,
+                          "reason": reason[:300], "date": today}
             continue
         assets = {}
         for platform, src in sorted(b["files"].items()):
@@ -180,6 +205,8 @@ def main():
             shutil.copyfile(src, dst)
             assets[platform] = {"url": f"https://github.com/{a.repo}/releases/download/{release}/{name}",
                                 "sha256": sha, "size": dst.stat().st_size, "sig": sign(a.key, dst) if a.key else ""}
+            if expressive:
+                assets[platform]["caps"] = dict(expressive["caps"])
         tried.pop(fid, None)
         c = (v or {}).get("compare", {})
         old = entries.get(fid, {})
@@ -192,7 +219,7 @@ def main():
                        "screen_diff": max([c.get(k, 0) for k in c if k.startswith("screen_diff")] or [0]),
                        "notes": accept.get(fid) or "; ".join(why)},
             "added": old.get("added", today), "updated": today,
-            "assets": {**(old.get("assets", {}) if old.get("commit") == pin["commit"] else {}), **assets},
+            "assets": {**(kept_assets(old, expressive) if old.get("commit") == pin["commit"] else {}), **assets},
         }
 
     index = {"schema": 1, "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "engine_abi": 1,
