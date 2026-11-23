@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "generated": "2026-11-23T17:07:27Z",
+ "generated": "2026-11-23T17:44:45Z",
  "engine_abi": 1,
  "hub_updated": "2026-11-23 15:59 UTC",
  "firmwares": [
@@ -878,6 +878,18 @@
      "sha256": "d8b83d5c028f8de3fa546c53e2b95d01cb7f741dd6a816ace075bcc2a4b2d1fc",
      "size": 1334120,
      "sig": "ZXsatICR4ng7qhlgIRQAKsgodD7v4351h13RqFzN3i6r78Ppchk6cfPXF5ZKoRcG9xuM7wHR9ZTbsgxaoeOHCw=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_caravel-1.1.1-ios-device-d0cd0640d8be.a",
+     "sha256": "d0cd0640d8bee9fa800b8cf54fc674b7dd1e2ecd7f625073ca3ec72a0df5b999",
+     "size": 1810176,
+     "sig": "H5wJxiYZuUD150hF2YxqtLi8HNAco+k6ytgyo/hcSGin7bejqayDeC3mnnAkyt6Cwusm4k3vxLaDk9eYEbSnBQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_caravel-1.1.1-ios-sim-0b9ba67a794d.a",
+     "sha256": "0b9ba67a794df93c61abb419c09f1bbfc86b0e93e04c032a1830ae120e475e2f",
+     "size": 1845736,
+     "sig": "VlTmz6FlTmHLbQgg6nMOw0i4tC6DfS95kOvOKMhjxRSmdmdOfDa7bNKjtBdzGu+WQmNvdRF4zk0xl+Gs248RAQ=="
     }
    }
   },
@@ -2269,6 +2281,18 @@
      "sha256": "3441ad05a560479338960d9d3d5dad9b3f2fb8c63d9c5480d983eaf328f65710",
      "size": 339464,
      "sig": "IGnYscq6YOfYoEVt7WPTX9SHqTLrId78JkOFNIIUxDZcbJAtEV0jdJ9+GWy24seV2qmlc5Y2MjWdIvTuZy3HCA=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fernbedienung-1.2-ios-device-929ed9877d70.a",
+     "sha256": "929ed9877d70b8bdd631915d4e220b642bc8fbf06ec95283f33556f30d6ab1ab",
+     "size": 359888,
+     "sig": "aPS18KCL1blSBE1wxB5atcwpCT+FGq86RcO2ZnjGMZ4ZGyYiwwEBZUVpcw9IqMAJfGVjDqNQtLwlkBK0gBLvAw=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_fernbedienung-1.2-ios-sim-da7c033648c0.a",
+     "sha256": "da7c033648c045fafafc86f44770f44d0a0ef2907a8deecb084b7b9002eb7e5d",
+     "size": 360768,
+     "sig": "Bbp9alDgDHrPiMFWaCF/xxuwe6gI7BxFVuRrmwZFYxle+8Sv1Yij16SmET86VIALSwoB56pZJlYR53rLzMk/Dw=="
     }
    }
   },
@@ -6158,6 +6182,18 @@
      "sha256": "4dbd4823edd6b26378720eced32b75e91930d1c7b7949843d8d98321176598c0",
      "size": 456464,
      "sig": "NClNEyklkz3rUusMxVrkdunfDrLo0UloBzETYhAmCKMUKIQDOBCTmDlDTJfVQRwQtsLIcgpCzk0POzW7fu46AQ=="
+    },
+    "ios-device": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_rhinotiger-1.0-ios-device-75872f2392a3.a",
+     "sha256": "75872f2392a3903a2712cf1da4da7aa0e485a7be5bd4742bc90682ed9fcc5ba3",
+     "size": 535840,
+     "sig": "C6rY3fdhR8VvYkiZFtsF6iIjZBWoKkEcnx4BJs/ofxs4Uv2KIRltEN/x8h0rE9NeV6ztSlKCKif1OfAug80XDQ=="
+    },
+    "ios-sim": {
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261123-17/libcart_rhinotiger-1.0-ios-sim-27758d320008.a",
+     "sha256": "27758d32000866ea4093309796d71054386d3ea6e82d95ad943b0cd424975ba9",
+     "size": 536352,
+     "sig": "7FslhAYzp/85tMQpJJmHfXT5iO80+Bcz/12jDAADAVodmBbudiqdW9dODj25tY0pkywZmGLQpZ97mCFEXoleBg=="
     }
    }
   },
