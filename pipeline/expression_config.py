@@ -11,7 +11,7 @@ NAME = re.compile(r"[a-z0-9_]+")
 CHECKS = frozenset({
     "audible_reference", "polyphonic_reference", "square_law_pressure", "pressure_zero",
     "pressure_restored", "per_note_isolation", "retrigger_resets_pressure",
-    "channel_isolation", "pitch_bend", "key_bend", "panic_recovery",
+    "channel_isolation", "pitch_bend", "key_bend", "panic_recovery", "notes_off_keeps_bend",
 })
 
 

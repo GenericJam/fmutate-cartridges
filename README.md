@@ -86,7 +86,7 @@ deliberately ignore per-note gain: several keys excite one shared network/host v
 
 `verify.py` runs the neutral emulator comparison **and** `expression_verify.py`'s offline audio scenarios:
 real two-note isolation, square-law gain, silence/restoration, retrigger, channel ownership, measured bend (MIDI
-notes and the firmware's own keys) and panic recovery. For Skiff/Caravel it also compiles `expression_felucca.c`
+notes and the firmware's own keys), panic recovery, and All Notes Off keeping a held bend (only CC121 resets it). For Skiff/Caravel it also compiles `expression_felucca.c`
 against the pinned source's real host harness (MONO/LEGATO/UNISON fallback, pedal/reset, chord tones, ARP octaves,
 a deferred engine switch, stolen slots); the gate requires that check for them. No audio device is opened.
 

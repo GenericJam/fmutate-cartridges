@@ -132,6 +132,28 @@ def test_neutral_check_requires_identical_outputs_with_the_patch_reversed(tmp_pa
     assert checks["neutral_render"]["ok"] is ok
 
 
+@pytest.mark.parametrize("rebuild", ["built", "failed"])
+def test_a_firmware_taken_out_of_the_manifest_is_rebuilt_and_loses_its_caps(tmp_path, monkeypatch, capsys,
+                                                                            throwaway_key, rebuild):
+    key, pub = throwaway_key
+    monkeypatch.setattr(publish, "verified", functools.partial(publish.verified, pub=pub))
+    here = beside(tmp_path / "pipeline", {"skiff": make_pin("skiff")})   # (no expression.json entry any more)
+    with_caps = {"url": "old-ios", "sha256": "a" * 64, "size": 7, "sig": "s", "caps": CAPS}
+    plain = {"url": "old-sim", "sha256": "b" * 64, "size": 7, "sig": "s"}
+    old = {"id": "skiff", **make_pin("skiff"), "expression": {"revision": "0" * 64, "caps": CAPS},
+           "assets": {"ios-device": with_caps, "ios-sim": plain}}
+    prev = previous(tmp_path, key, [old])
+    assert planned(monkeypatch, capsys, here, prev) == ["skiff"]
+
+    android_job(tmp_path / "art", "skiff", verify_report("skiff"), platforms=ANDROID if rebuild == "built" else ())
+    index = publish_index(monkeypatch, here, tmp_path / "art", tmp_path / "dist", "--prev", str(prev),
+                          "--key", str(key))
+    entry = index["firmwares"][0]
+    assert "expression" not in entry
+    assert "ios-device" not in entry["assets"] and entry["assets"]["ios-sim"] == plain
+    assert not any("caps" in asset for asset in entry["assets"].values())
+
+
 @pytest.mark.parametrize("broken", ["missing", "failed", "stale", "host", "platform"])
 def test_ios_gate_cannot_override_expression_failure(tmp_path, monkeypatch, capsys, broken):
     here = beside(tmp_path / "pipeline", {"skiff": make_pin("skiff")}, {"accept": {"skiff": "parity only"}})

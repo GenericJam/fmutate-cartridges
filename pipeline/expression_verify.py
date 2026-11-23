@@ -181,6 +181,12 @@ def exercise(fid, Engine, cart):
     checks['panic_recovery'] = {'ok': abs(recovery) <= 2 and abs(reset_cents) <= 10,
                                 'db': recovery, 'cents': reset_cents}
 
+    # All Notes Off (CC123, a DAW's loop point or transport stop) lets notes go but keeps a held bend: only CC121
+    # resets controllers. The next note sounds bent.
+    held = draw([(1000, [note_on(a), bend(16383)]), (600, [(0xB0, 123, 0)]), (1800, [note_on(a)])])[-1]
+    held_cents = float(1200 * math.log2(pitch(held, a) / pitch(clean, a)))
+    checks['notes_off_keeps_bend'] = {'ok': abs(held_cents - expected) <= 20, 'cents': held_cents}
+
     # FMutate bends strips that play the firmware's own keys too: MIDI bend on channel 1 must reach them.
     key = 7                                     # FM-1 key 7: C4 at octave 0
     keyed = draw([(1800, [('key', key, 1)]), (1200, [bend(16383)]), (1200, [bend(8192)])])

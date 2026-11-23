@@ -126,6 +126,19 @@ def collect(art, pins):
     return built
 
 
+def without_caps(entry):
+    """A published entry once its firmware has left the expression manifest: its proof and every asset that
+    carries caps go (that binary had the features of a patch no longer vouched for)."""
+    return {**{k: v for k, v in entry.items() if k != "expression"}, "assets": kept_assets(entry, None)}
+
+
+def kept_assets(old, expressive):
+    """The published entry's assets a same-commit rebuild keeps: all of them while the firmware is expressive (each
+    keeps its own caps), else only those without caps."""
+    assets = old.get("assets", {})
+    return assets if expressive else {p: a for p, a in assets.items() if "caps" not in a}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--artifacts", required=True)
@@ -173,7 +186,8 @@ def main():
             reason = "; ".join(expression_errors or why) if not ok else "no platform built: " + json.dumps(
                 {t: r.get("stage") for t, r in b["results"].items()})
             if entries.get(fid, {}).get("commit") == pin["commit"] and expressive is None and not expression_errors:
-                continue                    # (an ordinary rebuild that failed: keep the published entry)
+                entries[fid] = without_caps(entries[fid])   # (an ordinary rebuild that failed: keep the published
+                continue                                    # entry, but no caps once its firmware has no expression)
             tried[fid] = {**base, "check": "expression-failed" if expression_errors else check,
                           "reason": reason[:300], "date": today}
             continue
@@ -202,7 +216,7 @@ def main():
                        "screen_diff": max([c.get(k, 0) for k in c if k.startswith("screen_diff")] or [0]),
                        "notes": accept.get(fid) or "; ".join(why)},
             "added": old.get("added", today), "updated": today,
-            "assets": {**(old.get("assets", {}) if old.get("commit") == pin["commit"] else {}), **assets},
+            "assets": {**(kept_assets(old, expressive) if old.get("commit") == pin["commit"] else {}), **assets},
         }
 
     index = {"schema": 1, "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "engine_abi": 1,

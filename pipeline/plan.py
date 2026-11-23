@@ -56,9 +56,11 @@ def main():
         # (built already: published, or tried and not published; a firmware can be both, an older version
         # published and a newer one tried)
         done = idx.get("tried", []) + idx.get("firmwares", [])
+        # (an entry is current with the manifest's expression revision, or with none when the manifest has none:
+        # a firmware taken out of the manifest is rebuilt, so its published caps go)
         todo = [fid for fid, p in pins.items() if not any(
             f.get("id") == fid and f.get("commit") == p["commit"] and f.get("version") == p["version"]
-            and (expressions[fid] is None or matches(f.get("expression"), expressions[fid]))
+            and (matches(f.get("expression"), expressions[fid]) if expressions[fid] else not f.get("expression"))
             for f in done)]
     print(json.dumps([i for i in todo if i not in skip]))
 
