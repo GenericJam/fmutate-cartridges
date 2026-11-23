@@ -96,10 +96,18 @@ jobs:
           echo "building ($count): $ids" >> "$GITHUB_STEP_SUMMARY"
           # (what the plan left out and why, e.g. an expressive firmware whose Hub pin moved past its patch)
           if [ -s plan.txt ]; then { echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; fi
+          # (download-artifact extracts a lone pattern-matched artifact straight into its path, without the
+          # artifact's own directory: this placeholder makes the gate's cart-android-* and publish's cart-* always
+          # match two or more, so every build job's files stay under the cart-<kind>-<id> directory the workflow
+          # names, never under a name a firmware's build could choose. "~" is in no job name publish.py's JOB
+          # matches, so collect never reads it as a firmware's, whatever ids the Hub lists.)
+          mkdir -p placeholder && echo "not a build: keeps per-artifact directories" > placeholder/README
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: pins, path: pipeline/pins.json }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: prev, path: prev/, if-no-files-found: ignore }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: cart-android-~plan, path: placeholder/ }
 
   engine:
     # FMutate's two engines (its native one, which loads a cartridge, and its emulator one), for the parity check
@@ -159,7 +167,7 @@ jobs:
       - id: gate
         run: |
           mkdir -p artifacts
-          if ! compgen -G "artifacts/cart-android-*" >/dev/null; then
+          if ! compgen -G "artifacts/cart-android-[!~]*" >/dev/null; then
             echo "gate: no cart-android-* artifacts found despite planned builds" >&2
             exit 1
           fi
