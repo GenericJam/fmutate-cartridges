@@ -1,8 +1,8 @@
 {
  "schema": 1,
- "generated": "2026-11-23T17:54:19Z",
+ "generated": "2026-11-24T00:05:21Z",
  "engine_abi": 1,
- "hub_updated": "2026-11-23 15:59 UTC",
+ "hub_updated": "2026-11-23 21:02 UTC",
  "firmwares": [
   {
    "id": "adrift",
@@ -1678,11 +1678,20 @@
    "repo": "zvenson/dinghy",
    "commit": "ea1b6bf5973b11f9b4b806d08155602aaa0b505e",
    "pin": "provenance",
+   "expression": {
+    "revision": "d0f91a02efa8db188a613b74dd3e5450485b02a02339b8140b5edf84ee476d02",
+    "caps": {
+     "pitch_bend": true,
+     "note_pressure": true
+    }
+   },
    "name": "Dinghy",
    "license": "GPL-3.0",
    "recipe": "dinghy",
-   "build": "clean",
-   "patches": [],
+   "build": "patch",
+   "patches": [
+    "expression.patch"
+   ],
    "parity": {
     "status": "match",
     "level_diff_db": 6.0,
@@ -1691,37 +1700,57 @@
     "notes": ""
    },
    "added": "2026-11-19",
-   "updated": "2026-11-19",
+   "updated": "2026-11-24",
    "assets": {
     "android-arm64-v8a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dinghy-0.5-android-arm64-v8a.so",
-     "sha256": "fa0e7be245375d66606d754a8d0f5843bea2ac72dd2ca230e3604c95ce6bbf60",
-     "size": 81272,
-     "sig": "MLnbSOZPqA0Yox8rwQWrHe0J9C0TDi8TcNAz61VyS2r1ungYsHFqjTorVQlZ/dZYahcNPAhZpXqweK0BPYpGBA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261124-19/libcart_dinghy-0.5-android-arm64-v8a-41e68bfc2354.so",
+     "sha256": "41e68bfc2354da67df7e0b7adef775510886ae28cc9e94489316cc5be29c4b7a",
+     "size": 82904,
+     "sig": "58ykCWUWEUgGE8csmSJBj6hj4nwjnPLMr+PN/Mg2m/0LOKtJ5zZAQze7Vl0SPOBTV/Z3apN/DYdqYpCI6z7fDA==",
+     "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+     }
     },
     "android-x86_64": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dinghy-0.5-android-x86_64.so",
-     "sha256": "989948846147f670a26e80a31e716aca58fdc45ee9342d3088e52336acabbf9a",
-     "size": 82024,
-     "sig": "OphkHHI3ORU0mXpsg2/UXn1c6rgAbpUqXyX9ABN+7iwT/gJHR+TlQaAOaKdfE635weHRgqaPKjAsdJe6lyVMDA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261124-19/libcart_dinghy-0.5-android-x86_64-b6d40eda0771.so",
+     "sha256": "b6d40eda07713b4206d5742a541f748419879c5b02e779ac3df05b6141ae9078",
+     "size": 83352,
+     "sig": "Xmv3C37Rxh7UQJhcIw5Q9sdBuSWePwjjqiQj43rCVHYByPuAByJNixCQSzpkxvMlVBPHMUIpqbGaNognavmsBQ==",
+     "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+     }
     },
     "android-armeabi-v7a": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dinghy-0.5-android-armeabi-v7a.so",
-     "sha256": "048655ae93c787778a660bc3a55ad5c5f67d565250671ce12ab50e53ed3829d9",
-     "size": 79652,
-     "sig": "Jp6Xvw+WTUqoZ8KZjzFJDu8Dv8BJioFSVHoMkoJFfCJiVdhDbtVl7CQ53dXIpXCr5SlXy4pOy7+N0BkxlQzdAA=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261124-19/libcart_dinghy-0.5-android-armeabi-v7a-0757811fcac3.so",
+     "sha256": "0757811fcac3d44f7d2ef1f06ca8b5acaa4bec7abb2e5660de6de3b9639617da",
+     "size": 81108,
+     "sig": "ArAsS8vlM4NpfLYXl+MELAatbd0FIwBNgmvuOQ8+R9u5cKhOwzfnd95xQMnVAAxZmoygIDbY1hO5k5XOZbQkCA==",
+     "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+     }
     },
     "ios-device": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dinghy-0.5-ios-device.a",
-     "sha256": "9e9d7d4c702ead39c12ed6259571e9faf7594ddc992f6e3092921305dd067ee6",
-     "size": 55920,
-     "sig": "OA3njUFZSgGrP0f9Rm4DOkVqo9Pam3ksFMcB1Ym2ZPDbhKED4RjqveOKJIhA7rnakIh5Yb2LrtegjO9+T3ZiDg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261124-19/libcart_dinghy-0.5-ios-device-794a0a7fc122.a",
+     "sha256": "794a0a7fc1222efb9489d2d9b0c19a3f40537bd9f6dd08aa3adf817d0cb37b86",
+     "size": 59800,
+     "sig": "dMAfOqLa3UdHwhZFQsvyv1nkGEq7zni944pKbLirgtPaKCTzU0eTysun5Kr4aXP/YfMgmN8y7LhCe1KLwbyEBg==",
+     "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+     }
     },
     "ios-sim": {
-     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261119-10.1/libcart_dinghy-0.5-ios-sim.a",
-     "sha256": "e15c0467909016d3244eba1d1e6ee0234dd9b3b5837f06bf3f229c2a1cbbd076",
-     "size": 56184,
-     "sig": "cbrQ3dGDx5wcz82ipo6Jycau714Fk8IkQGwKRgMzBwQXIUx9RCIOw7gybZEEQeI6ANhbuwG06ijw4tNPAPSCAg=="
+     "url": "https://github.com/GenericJam/fmutate-cartridges/releases/download/build-20261124-19/libcart_dinghy-0.5-ios-sim-7d3d9304a993.a",
+     "sha256": "7d3d9304a99347ffe6a7199cda17b0ca90ac6c77145d1632ea09b5bbbf9a1da4",
+     "size": 60048,
+     "sig": "NqhTbQSPxLauHnX0UB109TI85hNPjGQFmcJSslR+jIklX6VPsVsyYXnnL7E2C0TB4/5F6WFGDvsEdOGFAnvvCg==",
+     "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+     }
     }
    }
   },
