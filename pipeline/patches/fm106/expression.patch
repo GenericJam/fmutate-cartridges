@@ -1,0 +1,870 @@
+FMutate expressive controls for FM-106 (GPL-3.0-only, preserving upstream attribution).
+
+Adds per-channel volatile MIDI pitch bend (0xEn, +-2 semitones default or scaled by B.DCO,
+center 8192, endpoints 0/16383; panel keys follow the active MIDI channel's bend) and
+per-note square-law MIDI polyphonic key pressure (0xAn, 127 unity skipped, 0 silent) via
+independent per-voice smoothed Q15 gain with channel/source-key isolation (including MONO
+unison stack and arpeggiator octaves) and new-note/retrigger/reuse reset; CC120/123 release
+notes and keep a held bend, CC121 resets bend, pressure and hold pedal.
+Neutral sound without pressure/bend is unchanged and persisted settings are untouched.
+
+--- a/firmware/src/fm106.c
++++ b/firmware/src/fm106.c
+@@ -3683,7 +3683,11 @@
+             } else if (g_ui_mode == UI_MODE_MIDI) {
+                 if (g_midi_sel == 0) {
+                     /* MIDI IN: cycle 0(All), 1..16 */
+-                    g_synth.midi_channel = (g_synth.midi_channel >= 16u) ? 0u : (g_synth.midi_channel + 1u);
++                    uint8_t nch = (g_synth.midi_channel >= 16u) ? 0u : (g_synth.midi_channel + 1u);
++                    for (uint32_t i = 0; i < 16u; i++) {
++                        if (nch && i != (uint32_t)(nch - 1u)) fm106_midi_reset_ch(&g_synth, i, 1, 0, 1);
++                    }
++                    g_synth.midi_channel = nch;
+                     set.midi_channel = g_synth.midi_channel;
+                     dirty_save = 1;
+                     t_change = fm1_ms;
+@@ -3705,11 +3709,7 @@
+                     g_synth.midi_local ^= 1u;
+                     set.midi_local = g_synth.midi_local;
+                     if (!g_synth.midi_local) {
+-                        fm1_irq_off();
+-                        for (uint8_t v = 0; v < FM106_NUM_VOICES; v++) {
+-                            if (g_synth.voice[v].note != 255u) fm106_note_off(&g_synth, g_synth.voice[v].note);
+-                        }
+-                        fm1_irq_on();
++                        fm106_midi_reset_ch(&g_synth, FM106_CH_KEY, 1, 0, 0);
+                     }
+                     dirty_save = 1;
+                     t_change = fm1_ms;
+@@ -3985,6 +3985,9 @@
+                     int32_t nc = (int32_t)g_synth.midi_channel + ealgo;
+                     if (nc < 0) nc = 16;
+                     if (nc > 16) nc = 0;
++                    for (uint32_t i = 0; i < 16u; i++) {
++                        if (nc && i != (uint32_t)(nc - 1)) fm106_midi_reset_ch(&g_synth, i, 1, 0, 1);
++                    }
+                     g_synth.midi_channel = (uint8_t)nc;
+                 } else if (g_midi_sel == 1) {   /* MIDI OUT: 1..16 */
+                     int32_t nc = (int32_t)g_synth.midi_out_ch + ealgo;
+@@ -4000,10 +4003,7 @@
+                 } else if (g_midi_sel == 3) {   /* LOCAL: keys play engine */
+                     g_synth.midi_local ^= (uint8_t)(ealgo > 0 ? 1u : 0u);
+                     if (!g_synth.midi_local) {   /* going local-off: release any held voices */
+-                        fm1_irq_off();
+-                        for (uint8_t v = 0; v < FM106_NUM_VOICES; v++)
+-                            if (g_synth.voice[v].note != 255u) fm106_note_off(&g_synth, g_synth.voice[v].note);
+-                        fm1_irq_on();
++                        fm106_midi_reset_ch(&g_synth, FM106_CH_KEY, 1, 0, 0);
+                     }
+                 } else if (g_midi_sel == 4) {   /* PC IN: accept program change */
+                     g_synth.pc_in ^= (uint8_t)(ealgo > 0 ? 1u : 0u);
+@@ -4260,16 +4260,22 @@
+             if (g_synth.midi_channel && (st & 0xF0u) < 0xF0u
+                 && ((st & 0x0Fu) + 1u) != g_synth.midi_channel)
+                 continue;
++            uint8_t ch = st & 0x0Fu;
+             uint8_t type = st & 0xF0u;
+             if (type == 0x90u && d2 > 0) {
+-                fm106_key_on(&g_synth, d1, d2);
+-                seq_note_entry(d1, d2); /* armed -> live record anywhere; else acid entry on SEQ page */
+-            } else if (type == 0x80u || (type == 0x90u && d2 == 0)) {
+-                fm106_key_off(&g_synth, d1);
+-                seq_note_release(d1); /* live-rec: stamp held length as gate */
++                fm106_key_on_ch(&g_synth, ch, d1 & 0x7Fu, d2 & 0x7Fu);
++                seq_note_entry(d1 & 0x7Fu, d2 & 0x7Fu); /* armed -> live record anywhere; else acid entry on SEQ page */
++            } else if (type == 0x80u || (type == 0x90u && d2 == 0)) {
++                fm106_key_off_ch(&g_synth, ch, d1 & 0x7Fu);
++                seq_note_release(d1 & 0x7Fu); /* live-rec: stamp held length as gate */
++            } else if (type == 0xA0u) {  /* Polyphonic Key Pressure */
++                fm106_pressure(&g_synth, ch, d1 & 0x7Fu, d2 & 0x7Fu);
+             } else if (type == 0xE0u) {  /* Pitch Bend */
+-                int32_t raw = ((int32_t)d2 << 7) | (int32_t)d1;
+-                g_synth.pitch_bend_val = (int16_t)(raw - 8192);
++                int32_t raw = (((int32_t)(d2 & 0x7Fu) << 7) | (int32_t)(d1 & 0x7Fu)) - 8192;
++                g_synth.midi_bend[ch] = (int16_t)(raw >= 0 ? (raw * 8192) / 8191 : raw);
++                if (ch == fm106_key_bend_ch(&g_synth)) {
++                    g_synth.pitch_bend_val = (int16_t)raw;
++                }
+             } else if (type == 0xC0u) {  /* Program Change (gated by PC IN + self-echo guard) */
+                 if (!g_synth.pc_in || pc_is_self_echo()) continue;
+                 int32_t cur_bank = (int32_t)g_synth.patch_idx / 65;
+@@ -4278,6 +4284,18 @@
+                 set.patch = (uint16_t)target_patch;
+                 dirty_screen = 1;
+             } else if (type == 0xB0u) {  /* Control Change */
++                if (d1 == 120u) {        /* All Sound Off (keeps held bend) */
++                    fm106_midi_reset_ch(&g_synth, ch, 1, 1, 0);
++                    continue;
++                }
++                if (d1 == 123u) {        /* All Notes Off (keeps held bend) */
++                    fm106_midi_reset_ch(&g_synth, ch, 1, 0, 0);
++                    continue;
++                }
++                if (d1 == 121u) {        /* Reset All Controllers (centres bend & lifts pressure) */
++                    fm106_midi_reset_ch(&g_synth, ch, 0, 0, 1);
++                    continue;
++                }
+                 if (d1 != 119u && d1 != 64u && cc_is_self_echo(d1)) continue;
+ 
+                 /* MIDI Learn mode interception */
+--- a/firmware/src/fm106_engine.h
++++ b/firmware/src/fm106_engine.h
+@@ -15,6 +15,8 @@
+ #include "fm106_presets.h"
+ 
+ #define FM106_NUM_VOICES 6u
++#define FM106_CH_KEY     16u    /* panel keys */
++#define FM106_CH_SEQ     17u    /* internal sequencer / metronome */
+ 
+ enum {
+     FM106_MODE_MONO = 0,
+@@ -29,6 +31,10 @@
+     uint8_t gliding;            /* 1 = exponential legato portamento curr_inc -> base_inc */
+     uint8_t seq_vel;            /* 0 = non-seq (pure Juno invariant), 1..127 = seq step vel */
+     uint8_t seq_accent;         /* 1 = seq ACCENT step (Roland VCF+VCA emphasis) */
++    uint8_t ch;                 /* owner channel: 0..15 MIDI, FM106_CH_KEY, FM106_CH_SEQ */
++    uint8_t src_note;           /* source MIDI key (0..127) for polyphonic aftertouch */
++    volatile uint16_t at_q15;   /* polyphonic aftertouch target gain, Q15 (0..32767; 32767 = unity) */
++    int32_t at_cur;             /* smoothed aftertouch gain, Q15: glides to at_q15 */
+     uint32_t age;               /* note-on age for voice stealing */
+     uint32_t base_inc;          /* target pitch phase step */
+     uint32_t curr_inc;          /* live slewed pitch phase step during legato slide */
+@@ -50,6 +56,7 @@
+     /* Voice Mode & Allocation (Mono/Poly I/Poly II from Juno-106) */
+     uint8_t voice_mode;         /* 0 = MONO (unison), 1 = POLY I, 2 = POLY II */
+     uint8_t mono_stack[16];     /* Mono note stack */
++    uint8_t mono_stack_ch[16];  /* Mono note stack owner channels */
+     uint8_t mono_stack_len;
+     int16_t mono_note;          /* Sounding unison note, -1 = none */
+     uint8_t voice_tbl[FM106_NUM_VOICES]; /* Poly I priority table (bubble sort) */
+@@ -117,6 +124,9 @@
+     int8_t octave_shift;        /* -2 .. +2 */
+     int8_t pitch_bend;          /* semitones (-12..+12) */
+     int16_t pitch_bend_val;     /* -8192 .. +8191 from MIDI pitch wheel */
++    int16_t midi_bend[16];      /* per-channel MIDI pitch bend (-8192..+8192 = +-2 st) */
++    uint8_t key_at[16][128];    /* per-channel/key MIDI poly pressure (0..127; 127 = unity) */
++    uint32_t key_ch_mask[128];  /* held channels bitmask per MIDI note (bits 0..16) */
+     uint8_t bender_dco;         /* 0..127 */
+     uint8_t bender_vcf;         /* 0..127 */
+     uint8_t hold_pedal;         /* 0 or 1 */
+@@ -130,6 +140,8 @@
+     uint16_t arp_step_idx;      /* index into the expanded sequence */
+     int8_t arp_dir;             /* +1 / -1 -- Up/Down turnaround */
+     int16_t arp_last_note;      /* sounding arp note, -1 = none */
++    uint8_t arp_last_ch;        /* channel of sounding arp note */
++    uint8_t arp_ch[128];        /* owner channel per arp pool note */
+     uint32_t arp_pool[4];       /* 128-bit sorted note pool (what gets arpped) */
+     uint32_t keys_down[4];      /* 128-bit physical key state (arp seed source) */
+ 
+@@ -149,6 +161,33 @@
+ static volatile uint32_t g_cpu1_ticks;
+ static volatile uint32_t g_cpu0_peak;   /* peak-hold render ticks (cleared by CC 119 / value 1 query) */
+ 
++/* Active MIDI bend channel followed by panel keys and internal voices */
++static inline uint32_t fm106_key_bend_ch(const fm106_engine_t *e)
++{
++    if (e->midi_channel >= 1u && e->midi_channel <= 16u)
++        return (uint32_t)(e->midi_channel - 1u);
++    if (e->midi_out_ch >= 1u && e->midi_out_ch <= 16u)
++        return (uint32_t)(e->midi_out_ch - 1u);
++    return 0u;
++}
++
++/* 1/4096 semitone (+-8192 = +-2 st) -> Q16 ~2^(s/12) */
++static inline uint32_t fm106_bend_to_q16(int32_t bd)
++{
++    int32_t s2;
++    if (bd < -8192) bd = -8192;
++    else if (bd > 8192) bd = 8192;
++    s2 = (bd * bd) >> 12;
++    return (uint32_t)(65536 + ((bd * 3786) >> 12) + ((s2 * 109) >> 12) + ((((s2 * bd) >> 12) * 2) >> 12));
++}
++
++/* Square-law polyphonic key pressure: 0 silent, 127 unity, (val/127)^2 in Q15 */
++static inline uint16_t fm106_at_gain_q15(uint32_t val)
++{
++    if (val >= 127u) return 32767u;
++    return (uint16_t)((val * val * 133141u) >> 16);
++}
++
+ /* Calculate phase step inc for MIDI note and octave range */
+ static inline uint32_t fm106_calc_inc(uint32_t note, int8_t oct_shift, uint8_t range)
+ {
+@@ -344,6 +383,15 @@
+     e->octave_shift = 0;
+     e->pitch_bend = 0;
+     e->pitch_bend_val = 0;
++    for (uint32_t c = 0; c < 16u; c++) {
++        e->midi_bend[c] = 0;
++        for (uint32_t n = 0; n < 128u; n++) e->key_at[c][n] = 127u;
++    }
++    for (uint32_t n = 0; n < 128u; n++) {
++        e->key_ch_mask[n] = 0;
++        e->arp_ch[n] = FM106_CH_KEY;
++    }
++    for (uint32_t i = 0; i < 16u; i++) e->mono_stack_ch[i] = FM106_CH_KEY;
+     e->hold_pedal = 0;
+     e->arp_on = 0;
+     e->arp_mode = 0;
+@@ -352,6 +400,7 @@
+     e->arp_step_idx = 0;
+     e->arp_dir = 1;
+     e->arp_last_note = -1;
++    e->arp_last_ch = FM106_CH_KEY;
+     for (uint32_t i = 0; i < 4u; i++) {
+         e->arp_pool[i] = 0;
+         e->keys_down[i] = 0;
+@@ -373,6 +422,10 @@
+         e->voice[i].gliding = 0;
+         e->voice[i].seq_vel = 0;
+         e->voice[i].seq_accent = 0;
++        e->voice[i].ch = FM106_CH_KEY;
++        e->voice[i].src_note = 255u;
++        e->voice[i].at_q15 = 32767u;
++        e->voice[i].at_cur = 32767;
+         e->voice[i].age = 0;
+         e->voice[i].base_inc = 0;
+         e->voice[i].curr_inc = 0;
+@@ -389,12 +442,13 @@
+ }
+ 
+ /* Voice allocation for Note On: MONO (Unison), POLY I (Bubble sort), POLY II (Linear priority) */
+-static void fm106_note_on(fm106_engine_t *e, uint32_t note, uint32_t vel)
++static void fm106_note_on_ex(fm106_engine_t *e, uint32_t ch, uint32_t note, uint32_t src_note, uint32_t vel)
+ {
+     if (vel == 0) {
+         return;
+     }
+ 
++    uint16_t at_g = (ch < 16u && src_note < 128u) ? fm106_at_gain_q15(e->key_at[ch][src_note]) : 32767u;
+     e->lfo_delay_timer = 0;
+ 
+     /* -------------------------------------------------------------
+@@ -402,16 +456,25 @@
+      * ------------------------------------------------------------- */
+     if (e->voice_mode == FM106_MODE_MONO) {
+         for (uint32_t i = 0; i < e->mono_stack_len; i++) {
+-            if (e->mono_stack[i] == (uint8_t)note) {
++            if (e->mono_stack[i] == (uint8_t)note && e->mono_stack_ch[i] == (uint8_t)ch) {
+                 for (uint32_t j = i; j + 1 < e->mono_stack_len; j++) {
+                     e->mono_stack[j] = e->mono_stack[j + 1];
++                    e->mono_stack_ch[j] = e->mono_stack_ch[j + 1];
+                 }
+                 e->mono_stack_len--;
+                 break;
+             }
+         }
+         if (e->mono_stack_len < 16u) {
++            e->mono_stack_ch[e->mono_stack_len] = (uint8_t)ch;
+             e->mono_stack[e->mono_stack_len++] = (uint8_t)note;
++        } else {
++            for (uint32_t j = 0; j < 15u; j++) {
++                e->mono_stack[j] = e->mono_stack[j + 1];
++                e->mono_stack_ch[j] = e->mono_stack_ch[j + 1];
++            }
++            e->mono_stack_ch[15] = (uint8_t)ch;
++            e->mono_stack[15] = (uint8_t)note;
+         }
+ 
+         int was_sounding = (e->mono_note >= 0);
+@@ -425,12 +488,16 @@
+             v->gliding = 0;
+             v->seq_vel = 0;
+             v->seq_accent = 0;
++            v->ch = (uint8_t)ch;
++            v->src_note = (uint8_t)src_note;
++            v->at_q15 = at_g;
+             v->age = ++e->age_counter;
+             v->base_inc = fm106_calc_unison_inc(note, 0, e->dco_range, i);
+             v->curr_inc = v->base_inc;
+             if (!was_sounding) {
+                 fm106_dco_reset(&v->dco);
+                 v->vca_slew = 0;
++                v->at_cur = (int32_t)at_g;
+             }
+             if (!e->dco_saw_on && !e->dco_pulse_on && !e->dco_sub_on && e->dco_noise_level == 0 && e->vcf_resonance > 80) {
+                 if (v->vcf.z[0] == 0.0f && v->vcf.z[1] == 0.0f) {
+@@ -495,6 +562,9 @@
+         v->gliding = 0;
+         v->seq_vel = 0;
+         v->seq_accent = 0;
++        v->ch = (uint8_t)ch;
++        v->src_note = (uint8_t)src_note;
++        v->at_q15 = at_g;
+         v->age = ++e->age_counter;
+         v->base_inc = fm106_calc_inc(note, 0, e->dco_range);
+         v->curr_inc = v->base_inc;
+@@ -504,6 +574,7 @@
+         if (!is_retrigger) {
+             fm106_dco_reset(&v->dco);
+             v->vca_slew = 0;
++            v->at_cur = (int32_t)at_g;
+         }
+         if (!e->dco_saw_on && !e->dco_pulse_on && !e->dco_sub_on && e->dco_noise_level == 0 && e->vcf_resonance > 80) {
+             if (v->vcf.z[0] == 0.0f && v->vcf.z[1] == 0.0f) v->vcf.z[0] = 50.0f * (1.0f / 32768.0f);
+@@ -538,14 +609,18 @@
+             }
+         }
+ 
+-        /* 1. If note already sounding on a voice, retrigger it */
++        /* 1. If note already sounding on a voice on the same channel, retrigger it */
+         for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
+-            if (e->voice[i].note == (uint8_t)note && (e->voice[i].gate || e->voice[i].adsr.stage != FM106_ENV_IDLE)) {
++            if (e->voice[i].note == (uint8_t)note && e->voice[i].ch == (uint8_t)ch &&
++                (e->voice[i].gate || e->voice[i].adsr.stage != FM106_ENV_IDLE)) {
+                 e->voice[i].gate = 1;
+                 e->voice[i].vel = (uint8_t)vel;
+                 e->voice[i].gliding = 0;
+                 e->voice[i].seq_vel = 0;
+                 e->voice[i].seq_accent = 0;
++                e->voice[i].ch = (uint8_t)ch;
++                e->voice[i].src_note = (uint8_t)src_note;
++                e->voice[i].at_q15 = at_g;
+                 e->voice[i].age = ++e->age_counter;
+                 e->voice[i].base_inc = fm106_calc_inc(note, 0, e->dco_range);
+                 e->voice[i].curr_inc = e->voice[i].base_inc;
+@@ -582,6 +657,9 @@
+         v->gliding = 0;
+         v->seq_vel = 0;
+         v->seq_accent = 0;
++        v->ch = (uint8_t)ch;
++        v->src_note = (uint8_t)src_note;
++        v->at_q15 = at_g;
+         v->age = ++e->age_counter;
+         v->base_inc = fm106_calc_inc(note, 0, e->dco_range);
+         v->curr_inc = v->base_inc;
+@@ -589,6 +667,7 @@
+         if (!is_retrigger) {
+             fm106_dco_reset(&v->dco);
+             v->vca_slew = 0;
++            v->at_cur = (int32_t)at_g;
+         }
+         if (!e->dco_saw_on && !e->dco_pulse_on && !e->dco_sub_on && e->dco_noise_level == 0 && e->vcf_resonance > 80) {
+             if (v->vcf.z[0] == 0.0f && v->vcf.z[1] == 0.0f) v->vcf.z[0] = 50.0f * (1.0f / 32768.0f);
+@@ -597,12 +676,17 @@
+     }
+ }
+ 
++static inline void fm106_note_on(fm106_engine_t *e, uint32_t note, uint32_t vel)
++{
++    fm106_note_on_ex(e, FM106_CH_SEQ, note, note, vel);
++}
++
+ /* Sequencer Note-On: wraps fm106_note_on and tags step velocity / accent */
+ static void fm106_seq_note_on(fm106_engine_t *e, uint32_t note, uint32_t vel, uint8_t accent)
+ {
+-    fm106_note_on(e, note, vel);
++    fm106_note_on_ex(e, FM106_CH_SEQ, note, note, vel);
+     for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
+-        if (e->voice[i].note == (uint8_t)note && e->voice[i].gate) {
++        if (e->voice[i].note == (uint8_t)note && e->voice[i].ch == FM106_CH_SEQ && e->voice[i].gate) {
+             e->voice[i].seq_vel = (uint8_t)vel;
+             e->voice[i].seq_accent = accent ? 1u : 0u;
+             break;
+@@ -620,6 +704,9 @@
+     v->vel = (uint8_t)vel;
+     v->seq_vel = (uint8_t)vel;
+     v->seq_accent = accent ? 1u : 0u;
++    v->ch = FM106_CH_SEQ;
++    v->src_note = (uint8_t)new_note;
++    v->at_q15 = 32767u;
+     v->age = ++e->age_counter;
+     v->base_inc = fm106_calc_inc(new_note, 0, e->dco_range);
+     v->gliding = (v->curr_inc != v->base_inc) ? 1u : 0u;
+@@ -630,25 +717,31 @@
+ }
+ 
+ /* Voice note off: advances ADSR release phase while silencing Gate-mode VCA */
+-static void fm106_note_off(fm106_engine_t *e, uint32_t note)
++static void fm106_note_off_ch(fm106_engine_t *e, uint32_t ch, uint32_t note)
+ {
+     /* Mode 0: MONO */
+     if (e->voice_mode == FM106_MODE_MONO) {
+         for (uint32_t i = 0; i < e->mono_stack_len; i++) {
+-            if (e->mono_stack[i] == (uint8_t)note) {
++            if (e->mono_stack[i] == (uint8_t)note && e->mono_stack_ch[i] == (uint8_t)ch) {
+                 for (uint32_t j = i; j + 1 < e->mono_stack_len; j++) {
+                     e->mono_stack[j] = e->mono_stack[j + 1];
++                    e->mono_stack_ch[j] = e->mono_stack_ch[j + 1];
+                 }
+                 e->mono_stack_len--;
+                 break;
+             }
+         }
+-        if (e->mono_note == (int16_t)note) {
++        if (e->mono_note == (int16_t)note && e->voice[0].ch == (uint8_t)ch) {
+             if (e->mono_stack_len > 0) {
+                 uint8_t prev_note = e->mono_stack[e->mono_stack_len - 1];
++                uint8_t prev_ch = e->mono_stack_ch[e->mono_stack_len - 1];
++                uint16_t at_g = (prev_ch < 16u) ? fm106_at_gain_q15(e->key_at[prev_ch][prev_note]) : 32767u;
+                 e->mono_note = (int16_t)prev_note;
+                 for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
+                     e->voice[i].note = prev_note;
++                    e->voice[i].src_note = prev_note;
++                    e->voice[i].ch = prev_ch;
++                    e->voice[i].at_q15 = at_g;
+                     e->voice[i].base_inc = fm106_calc_unison_inc(prev_note, 0, e->dco_range, i);
+                     if (!e->voice[i].gliding) e->voice[i].curr_inc = e->voice[i].base_inc;
+                 }
+@@ -670,7 +763,7 @@
+         int found_pos = -1;
+         for (uint32_t pos = 0; pos < FM106_NUM_VOICES; pos++) {
+             uint8_t vi = e->voice_tbl[pos];
+-            if (e->voice[vi].note == (uint8_t)note && e->voice[vi].gate) {
++            if (e->voice[vi].note == (uint8_t)note && e->voice[vi].ch == (uint8_t)ch && e->voice[vi].gate) {
+                 found_pos = (int)pos;
+                 break;
+             }
+@@ -693,7 +786,7 @@
+ 
+     /* Mode 2: POLY II (Release first matching voice only, ROM $0B30) */
+     for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
+-        if (e->voice[i].note == (uint8_t)note && e->voice[i].gate) {
++        if (e->voice[i].note == (uint8_t)note && e->voice[i].ch == (uint8_t)ch && e->voice[i].gate) {
+             e->voice[i].gate = 0;
+             if (!e->hold_pedal) {
+                 fm106_adsr_gate_off(&e->voice[i].adsr);
+@@ -703,6 +796,11 @@
+     }
+ }
+ 
++static inline void fm106_note_off(fm106_engine_t *e, uint32_t note)
++{
++    fm106_note_off_ch(e, FM106_CH_SEQ, note);
++}
++
+ /* ------------------------------------------------------------------ *
+  * Arpeggiator (ported from KR106Arpeggiator.h)
+  *
+@@ -771,7 +869,7 @@
+ }
+ 
+ /* Note at ascending index `idx` in the expanded sequence */
+-static int32_t fm106_arp_seq_note(const fm106_engine_t *e, uint32_t idx)
++static int32_t fm106_arp_seq_note(const fm106_engine_t *e, uint32_t idx, uint32_t *src_out)
+ {
+     uint32_t i = 0;
+     for (uint32_t oct = 0; oct < (uint32_t)e->arp_range; oct++) {
+@@ -784,6 +882,7 @@
+                 note -= 12u;
+             }
+             if (i == idx) {
++                if (src_out) *src_out = n;
+                 return (int32_t)note;
+             }
+             i++;
+@@ -793,7 +892,7 @@
+ }
+ 
+ /* Advance the sequence and return the next note to play */
+-static int32_t fm106_arp_next(fm106_engine_t *e)
++static int32_t fm106_arp_next(fm106_engine_t *e, uint32_t *src_out)
+ {
+     uint32_t len = fm106_arp_seq_len(e);
+     if (len == 0) {
+@@ -806,7 +905,7 @@
+     int32_t note;
+     switch (e->arp_mode) {
+     case 1: /* Up/Down -- peak and trough notes play once */
+-        note = fm106_arp_seq_note(e, e->arp_step_idx);
++        note = fm106_arp_seq_note(e, e->arp_step_idx, src_out);
+         if (len > 1) {
+             e->arp_step_idx = (uint16_t)((int32_t)e->arp_step_idx + e->arp_dir);
+             if (e->arp_step_idx >= len) {
+@@ -820,12 +919,12 @@
+         break;
+ 
+     case 2: /* Down */
+-        note = fm106_arp_seq_note(e, len - 1u - (uint32_t)e->arp_step_idx);
++        note = fm106_arp_seq_note(e, len - 1u - (uint32_t)e->arp_step_idx, src_out);
+         e->arp_step_idx = (uint16_t)((e->arp_step_idx + 1u) % len);
+         break;
+ 
+     default: /* Up */
+-        note = fm106_arp_seq_note(e, e->arp_step_idx);
++        note = fm106_arp_seq_note(e, e->arp_step_idx, src_out);
+         e->arp_step_idx = (uint16_t)((e->arp_step_idx + 1u) % len);
+         break;
+     }
+@@ -844,7 +943,7 @@
+     if (fm106_bit_count(e->arp_pool) == 0) {
+         /* Pool emptied: release whatever was still sounding */
+         if (e->arp_last_note >= 0) {
+-            fm106_note_off(e, (uint32_t)e->arp_last_note);
++            fm106_note_off_ch(e, e->arp_last_ch, (uint32_t)e->arp_last_note);
+             e->arp_last_note = -1;
+         }
+         return;
+@@ -858,12 +957,15 @@
+ 
+         /* Each step retriggers the gate -- envelope re-attacks */
+         if (e->arp_last_note >= 0) {
+-            fm106_note_off(e, (uint32_t)e->arp_last_note);
++            fm106_note_off_ch(e, e->arp_last_ch, (uint32_t)e->arp_last_note);
+         }
+-        int32_t note = fm106_arp_next(e);
++        uint32_t src = 0;
++        int32_t note = fm106_arp_next(e, &src);
+         if (note >= 0) {
+-            fm106_note_on(e, (uint32_t)note, 127);
++            uint8_t ch = e->arp_ch[src & 127u];
++            fm106_note_on_ex(e, ch, (uint32_t)note, src & 127u, 127);
+             e->arp_last_note = (int16_t)note;
++            e->arp_last_ch = ch;
+         }
+     }
+     if (e->arp_phase >= (1u << 20)) {
+@@ -1132,6 +1234,7 @@
+                 old_vi[i] = -1;
+                 for (uint32_t vi = 0; vi < FM106_NUM_VOICES; vi++) {
+                     if (!(used_v & (1u << vi)) && e->voice[vi].note == old_notes[i] &&
++                        e->voice[vi].ch == FM106_CH_SEQ &&
+                         (e->voice[vi].gate || e->voice[vi].adsr.stage != FM106_ENV_IDLE)) {
+                         old_vi[i] = (int8_t)vi;
+                         used_v |= (uint8_t)(1u << vi);
+@@ -1198,9 +1301,9 @@
+ }
+ 
+ /* Panel/MIDI key press. Feeds the arp pool when the arp is enabled. */
+-static void fm106_key_on(fm106_engine_t *e, uint32_t note, uint32_t vel)
++static void fm106_key_on_ch(fm106_engine_t *e, uint32_t ch, uint32_t note, uint32_t vel)
+ {
+-    if (note > 127u) {
++    if (note > 127u || ch > FM106_CH_KEY) {
+         return;
+     }
+     fm1_irq_off();
+@@ -1209,8 +1312,13 @@
+ #endif
+     if (fm106_bit_count(e->keys_down) == 0) {
+         e->lfo_delay_timer = 0;
++    }
++    e->key_ch_mask[note] |= (1u << ch);
++    if (ch < 16u) {
++        e->key_at[ch][note] = 127u;   /* new note / retrigger starts at unity pressure */
+     }
+     fm106_bit_set(e->keys_down, note);
++    e->arp_ch[note] = (uint8_t)ch;
+ 
+     if (e->arp_on) {
+         fm106_bit_set(e->arp_pool, note);
+@@ -1222,30 +1330,208 @@
+         fm1_irq_on();
+         return;   /* the arp owns the voices, not this key */
+     }
+-    fm106_note_on(e, note, vel);
++    fm106_note_on_ex(e, ch, note, note, vel);
+     fm1_irq_on();
+ }
+ 
++static inline void fm106_key_on(fm106_engine_t *e, uint32_t note, uint32_t vel)
++{
++    fm106_key_on_ch(e, FM106_CH_KEY, note, vel);
++}
++
+ /* Panel/MIDI key release. Hold pedal keeps arp notes in the pool. */
+-static void fm106_key_off(fm106_engine_t *e, uint32_t note)
++static void fm106_key_off_ch(fm106_engine_t *e, uint32_t ch, uint32_t note)
+ {
+-    if (note > 127u) {
++    if (note > 127u || ch > FM106_CH_KEY) {
+         return;
+     }
+     fm1_irq_off();
+ #if DINGHY_DUAL_CORE
+     if (audio_worker_online) audio_worker_join();
+ #endif
+-    fm106_bit_clr(e->keys_down, note);
++    uint32_t was_held = e->key_ch_mask[note] & (1u << ch);
++    e->key_ch_mask[note] &= ~(1u << ch);
++    if (e->key_ch_mask[note] == 0u) {
++        fm106_bit_clr(e->keys_down, note);
++    } else if (e->arp_ch[note] == (uint8_t)ch) {
++        if (e->key_ch_mask[note] & (1u << FM106_CH_KEY)) {
++            e->arp_ch[note] = FM106_CH_KEY;
++        } else {
++            for (uint32_t c = 0; c < 16u; c++) {
++                if (e->key_ch_mask[note] & (1u << c)) {
++                    e->arp_ch[note] = (uint8_t)c;
++                    break;
++                }
++            }
++        }
++    }
+ 
+     if (e->arp_on) {
+-        if (!e->hold_pedal) {
++        if (was_held && e->key_ch_mask[note] == 0u && !e->hold_pedal) {
+             fm106_bit_clr(e->arp_pool, note);
+         }
+         fm1_irq_on();
+         return;
+     }
+-    fm106_note_off(e, note);
++    fm106_note_off_ch(e, ch, note);
++    fm1_irq_on();
++}
++
++static inline void fm106_key_off(fm106_engine_t *e, uint32_t note)
++{
++    fm106_key_off_ch(e, FM106_CH_KEY, note);
++}
++
++/* MIDI polyphonic key pressure (0xAn): isolated per MIDI channel and source key */
++static void fm106_pressure(fm106_engine_t *e, uint32_t ch, uint32_t note, uint32_t val)
++{
++    if (ch >= 16u || note > 127u) {
++        return;
++    }
++    uint16_t g = fm106_at_gain_q15(val);
++    fm1_irq_off();
++#if DINGHY_DUAL_CORE
++    if (audio_worker_online) audio_worker_join();
++#endif
++    if (e->key_ch_mask[note] & (1u << ch)) {
++        e->key_at[ch][note] = (uint8_t)(val > 127u ? 127u : val);
++    }
++    for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
++        fm106_voice_t *v = &e->voice[i];
++        if (v->ch == (uint8_t)ch && v->src_note == (uint8_t)note &&
++            (v->gate || (e->arp_on && (e->key_ch_mask[note] & (1u << ch))))) {
++            v->at_q15 = g;
++        }
++    }
++    fm1_irq_on();
++}
++
++/* Channel reset: CC120 (All Sound Off) & CC123 (All Notes Off) keep bend;
++ * CC121 (Reset All Controllers) centres bend and lifts pressure. */
++static void fm106_midi_reset_ch(fm106_engine_t *e, uint32_t ch, int release_notes, int sound_off, int reset_controllers)
++{
++    if (ch > FM106_CH_KEY) {
++        return;
++    }
++    fm1_irq_off();
++#if DINGHY_DUAL_CORE
++    if (audio_worker_online) audio_worker_join();
++#endif
++    if (reset_controllers && ch < 16u) {
++        e->midi_bend[ch] = 0;
++        if (ch == fm106_key_bend_ch(e)) {
++            e->pitch_bend_val = 0;
++        }
++        for (uint32_t n = 0; n < 128u; n++) {
++            e->key_at[ch][n] = 127u;
++        }
++        if (e->hold_pedal) {
++            e->hold_pedal = 0;
++            for (uint32_t n = 0; n < 128u; n++) {
++                if (!fm106_bit_get(e->keys_down, n)) {
++                    fm106_bit_clr(e->arp_pool, n);
++                }
++            }
++            for (uint32_t vi = 0; vi < FM106_NUM_VOICES; vi++) {
++                if (!e->voice[vi].gate && e->voice[vi].adsr.stage != FM106_ENV_IDLE) {
++                    fm106_adsr_gate_off(&e->voice[vi].adsr);
++                }
++            }
++        }
++    }
++    if (release_notes) {
++        if (ch < 16u) {
++            for (uint32_t n = 0; n < 128u; n++) {
++                e->key_at[ch][n] = 127u;
++            }
++        }
++        for (uint32_t n = 0; n < 128u; n++) {
++            if (e->key_ch_mask[n] & (1u << ch)) {
++                e->key_ch_mask[n] &= ~(1u << ch);
++                if (e->key_ch_mask[n] == 0u) {
++                    fm106_bit_clr(e->keys_down, n);
++                    if (sound_off || !e->hold_pedal) {
++                        fm106_bit_clr(e->arp_pool, n);
++                    }
++                } else if (e->arp_ch[n] == (uint8_t)ch) {
++                    if (e->key_ch_mask[n] & (1u << FM106_CH_KEY)) {
++                        e->arp_ch[n] = FM106_CH_KEY;
++                    } else {
++                        for (uint32_t c = 0; c < 16u; c++) {
++                            if (e->key_ch_mask[n] & (1u << c)) {
++                                e->arp_ch[n] = (uint8_t)c;
++                                break;
++                            }
++                        }
++                    }
++                }
++            }
++        }
++        if (e->arp_on && e->arp_last_note >= 0 && e->arp_last_ch == (uint8_t)ch &&
++            (sound_off || fm106_bit_count(e->arp_pool) == 0u)) {
++            e->arp_last_note = -1;
++        }
++        if (e->voice_mode == FM106_MODE_MONO) {
++            uint8_t w = 0;
++            for (uint32_t i = 0; i < e->mono_stack_len; i++) {
++                if (e->mono_stack_ch[i] != (uint8_t)ch) {
++                    e->mono_stack[w] = e->mono_stack[i];
++                    e->mono_stack_ch[w] = e->mono_stack_ch[i];
++                    w++;
++                }
++            }
++            e->mono_stack_len = w;
++            if (w > 0u) {
++                uint8_t prev_note = e->mono_stack[w - 1u];
++                uint8_t prev_ch = e->mono_stack_ch[w - 1u];
++                uint16_t at_g = (prev_ch < 16u) ? fm106_at_gain_q15(e->key_at[prev_ch][prev_note]) : 32767u;
++                e->mono_note = (int16_t)prev_note;
++                for (uint32_t i = 0; i < FM106_NUM_VOICES; i++) {
++                    e->voice[i].note = prev_note;
++                    e->voice[i].src_note = prev_note;
++                    e->voice[i].ch = prev_ch;
++                    e->voice[i].at_q15 = at_g;
++                    e->voice[i].base_inc = fm106_calc_unison_inc(prev_note, 0, e->dco_range, i);
++                    if (!e->voice[i].gliding) e->voice[i].curr_inc = e->voice[i].base_inc;
++                }
++                fm1_irq_on();
++                return;
++            }
++            e->mono_note = -1;
++        }
++        for (uint32_t vi = 0; vi < FM106_NUM_VOICES; vi++) {
++            fm106_voice_t *v = &e->voice[vi];
++            if (v->ch != (uint8_t)ch) continue;
++            if (v->gate && e->voice_mode == FM106_MODE_POLY1) {
++                for (uint32_t pos = 0; pos < FM106_NUM_VOICES; pos++) {
++                    if (e->voice_tbl[pos] == (uint8_t)vi) {
++                        for (uint32_t p = pos; p + 1u < FM106_NUM_VOICES; p++) {
++                            uint8_t tmp = e->voice_tbl[p];
++                            e->voice_tbl[p] = e->voice_tbl[p + 1u];
++                            e->voice_tbl[p + 1u] = tmp;
++                        }
++                        break;
++                    }
++                }
++            }
++            v->gate = 0;
++            if (sound_off) {
++                v->adsr.stage = FM106_ENV_IDLE;
++                v->adsr.env14 = 0;
++                v->adsr.env_prev = 0;
++                v->adsr.env_next = 0;
++                v->vca_slew = 0;
++            } else if (!e->hold_pedal) {
++                fm106_adsr_gate_off(&v->adsr);
++            }
++        }
++    } else if (reset_controllers) {
++        for (uint32_t vi = 0; vi < FM106_NUM_VOICES; vi++) {
++            if (e->voice[vi].ch == (uint8_t)ch && e->voice[vi].gate) {
++                e->voice[vi].at_q15 = 32767u;
++            }
++        }
++    }
+     fm1_irq_on();
+ }
+ 
+@@ -1266,7 +1552,11 @@
+         for (uint32_t n = 0; n < 128u; n++) {
+             if (fm106_bit_get(e->keys_down, n)) {
+                 fm106_bit_set(e->arp_pool, n);
+-                fm106_note_off(e, n);   /* arp takes over from the chord */
++                for (uint32_t c = 0; c <= FM106_CH_KEY; c++) {
++                    if (e->key_ch_mask[n] & (1u << c)) {
++                        fm106_note_off_ch(e, c, n);   /* arp takes over from the chord */
++                    }
++                }
+             }
+         }
+         e->arp_step_idx = 0;
+@@ -1276,7 +1566,7 @@
+         e->arp_on = 1;
+     } else {
+         if (e->arp_last_note >= 0) {
+-            fm106_note_off(e, (uint32_t)e->arp_last_note);
++            fm106_note_off_ch(e, e->arp_last_ch, (uint32_t)e->arp_last_note);
+             e->arp_last_note = -1;
+         }
+         e->arp_on = 0;
+@@ -1287,7 +1577,7 @@
+         if (e->hold_pedal) {
+             for (uint32_t n = 0; n < 128u; n++) {
+                 if (fm106_bit_get(e->keys_down, n)) {
+-                    fm106_note_on(e, n, 127);
++                    fm106_note_on_ex(e, e->arp_ch[n], n, n, 127);
+                 }
+             }
+         }
+@@ -1342,28 +1632,35 @@
+     }
+ 
+     /* Hoist block-constant DCO pitch bend and VCF pitch bend outside the 256-sample loop */
+-    int32_t dco_bend_mod = 0;
+-    if (e->pitch_bend_val != 0 && e->bender_dco > 0) {
+-        dco_bend_mod = ((int32_t)e->pitch_bend_val * (int32_t)e->bender_dco) >> 13;
++    uint32_t bch = (v->ch < 16u) ? (uint32_t)v->ch : fm106_key_bend_ch(e);
++    int32_t raw_b = e->midi_bend[bch];
++    uint32_t bend_q16 = 65536u;
++    if (raw_b != 0) {
++        int32_t bd = e->bender_dco ? (raw_b * (int32_t)e->bender_dco) / 127 : raw_b;
++        bend_q16 = fm106_bend_to_q16(bd);
+     }
+ 
+     uint16_t vcfBendAmt = 0;
+     uint8_t bendPol = 0;
+-    if (e->pitch_bend_val != 0 && e->bender_vcf > 0) {
+-        int32_t raw_b = e->pitch_bend_val;
++    if (raw_b != 0 && e->bender_vcf > 0) {
+         bendPol = (raw_b < 0) ? 1u : 0u;
+         uint32_t abs_b = raw_b < 0 ? (uint32_t)(-raw_b) : (uint32_t)raw_b;
+         vcfBendAmt = (uint16_t)((abs_b * (uint32_t)e->bender_vcf) >> 9);
+     }
+ 
++    int32_t at = v->at_cur;
++    int32_t at_g = (int32_t)v->at_q15;
++    if (!v->vca_slew && v->adsr.env14 == 0)
++        at = at_g;
++
+     /* When DCO LFO depth is 0 and not gliding, eff_inc and 1/eff_inc are invariant across the block */
+     uint32_t base_inc = v->base_inc;
+     uint8_t gliding = v->gliding;
+     float glide_inc = gliding ? (float)(v->curr_inc ? v->curr_inc : base_inc) : 0.0f;
+     float target_inc = (float)base_inc;
+     uint32_t static_inc = base_inc;
+-    if (dco_bend_mod != 0) {
+-        static_inc = (uint32_t)((int32_t)static_inc + ((dco_bend_mod * (int32_t)(static_inc >> 8)) >> 7));
++    if (bend_q16 != 65536u) {
++        static_inc = (uint32_t)(((uint64_t)static_inc * bend_q16) >> 16);
+     }
+     uint32_t static_blep_inc = (static_inc < 2u) ? 0u : static_inc;
+     float static_inv_inc = static_blep_inc ? (1.0f / (float)static_blep_inc) : 0.0f;
+@@ -1387,8 +1684,8 @@
+                 int32_t pitch_mod = (lfo_s * (int32_t)dco_lfo) >> 15;
+                 eff_inc = (uint32_t)((int32_t)eff_inc + ((pitch_mod * (int32_t)(eff_inc >> 8)) >> 3));
+             }
+-            if (dco_bend_mod != 0) {
+-                eff_inc = (uint32_t)((int32_t)eff_inc + ((dco_bend_mod * (int32_t)(eff_inc >> 8)) >> 7));
++            if (bend_q16 != 65536u) {
++                eff_inc = (uint32_t)(((uint64_t)eff_inc * bend_q16) >> 16);
+             }
+             blep_inc = (eff_inc < 2u) ? 0u : eff_inc;
+             inv_inc = blep_inc ? (1.0f / (float)blep_inc) : 0.0f;
+@@ -1455,10 +1752,19 @@
+ 
+         /* VCA scaling via FPU (prevents 32-bit overflow on resonant VCF peaks without int64 math) */
+         int32_t out_s = (int32_t)((float)vcf_s * ((float)vca_gain * vca_norm));
++        if (at != at_g) {
++            if (at < at_g) { at += 256; if (at > at_g) at = at_g; }   /* ~2.9 ms pressure glide */
++            else           { at -= 256; if (at < at_g) at = at_g; }
++        }
++        if (at < 32767) {
++            out_s = (int32_t)(((int64_t)out_s * at) >> 15);
++        }
+         if (accumulate) sum[i] += out_s;
+         else            sum[i]  = out_s;
+     }
+ 
++    v->at_cur = at;
++
+     if (gliding) {
+         float diff = target_inc - glide_inc;
+         if (diff < 0.0f) diff = -diff;

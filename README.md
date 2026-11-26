@@ -70,25 +70,28 @@ python3 pipeline/report.py                 # everything built so far: pipeline/r
 
 `FM1_CATALOG_DIR` (default `work/`) and `FM1_ENGINE_DIR` (default `engine/`) move the work and engine directories.
 
-## Native expression pilot
+## Native expression
 
-`pipeline/expression.json` pins the source commit for **Dinghy**. Its native-only patch adds OberVave-style MIDI
-poly pressure (`0xAn`, key, level): 127 is unchanged unity, 64 is about one-quarter amplitude, and 0 silences that
-key. Pressure is a separate square-law gain; original note velocity, envelopes and presets are preserved, and
-ordinary notes without pressure keep their original level. It also gains the default ±2-semitone MIDI bend.
+`pipeline/expression.json` pins the source commits for firmwares with FMutate native expression (**Dinghy**,
+**Skiff**, **Caravel**, **FM-106**, **GR!MM**, **FRASIL**). Each native-only patch adds OberVave-style MIDI poly pressure
+(`0xAn`, key, level): 127 is unchanged unity (gain skipped, bit-identical), 64 is about one-quarter amplitude, and 0
+silences that key. Pressure is a separate square-law gain; original note velocity, envelopes and presets are preserved,
+and ordinary notes without pressure keep their original level. Every entry also provides ±2-semitone MIDI pitch bend
+(`0xEn`), including on the firmware's own keys; CC120/123 release notes while keeping a held bend, and CC121 resets bend
+and pressure.
 
-**Skiff and Caravel are pending.** `pipeline/expression-pending/` holds their patches for Skiff 2.6 and Caravel
-0.13.0, which the Hub has since replaced (2.7, 1.1.1). Nothing applies them; both build stock until ported.
-Before re-adding them to the manifest: port each patch to the current pin, make expression ownership come only
-from the input paths (today a sequencer note on a held key's pitch inherits that key's pressure), and keep Caravel's
-per-key depth with the MIDI key across a Harmony remap of a held CHRD BUS chord. Caravel's **DRONE cells**
-deliberately ignore per-note gain: several keys excite one shared network/host voice.
+In Felucca-family firmwares (`FELUCCA_FAMILY` in `pipeline/expression_config.py`), expression ownership comes strictly
+from MIDI input paths (including arp/strum/chord expansion and Caravel's Harmony CHRD BUS retrigger of a held MIDI key),
+never from sequencer or panel notes that happen to share a pitch. Caravel's **DRONE cells** deliberately ignore per-note
+gain because several keys excite one shared network/host voice.
 
 `verify.py` runs the neutral emulator comparison **and** `expression_verify.py`'s offline audio scenarios:
 real two-note isolation, square-law gain, silence/restoration, retrigger, channel ownership, measured bend (MIDI
-notes and the firmware's own keys), panic recovery, and All Notes Off keeping a held bend (only CC121 resets it). For Skiff/Caravel it also compiles `expression_felucca.c`
-against the pinned source's real host harness (MONO/LEGATO/UNISON fallback, pedal/reset, chord tones, ARP octaves,
-a deferred engine switch, stolen slots); the gate requires that check for them. No audio device is opened.
+notes and the firmware's own keys), panic recovery, and All Notes Off keeping a held bend (only CC121 resets it). For
+every `FELUCCA_FAMILY` id it also compiles `expression_felucca.c` against the pinned source's real host harness
+(MONO/LEGATO/UNISON fallback, pedal/reset, chord tones, ARP octaves, deferred engine switch, stolen slots, sequencer
+isolation, and Caravel Harmony CHRD BUS retrigger); the gate requires that check for every Felucca-family firmware. No
+audio device is opened.
 
 **Nothing else may change.** Every manifest entry must list `neutral` tests: commands from the firmware's own test
 suite (`run`, a shell command; `{shim}` becomes the native shims' compiler flags) and the files they write
@@ -149,7 +152,8 @@ shim, patch and dependency pin that went into it. That is the complete correspon
 fetchable here and at the authors' repositories. If any of it becomes unavailable, open an issue on this repository
 and we will provide it. Firmwares without a licence are not published (`overrides.json` `skip`).
 
-The pipeline itself (everything in this repository) is GPL-3.0 (`LICENSE`), including its firmware patches.
+The pipeline itself (everything in this repository) is GPL-3.0 (`LICENSE`); patches to firmwares under compatible
+copyleft licences (such as MPL-2.0) are licensed under the patched firmware's licence.
 FMutate's original application code is MIT; the firmware code keeps its authors' licences.
 
 ## Security model

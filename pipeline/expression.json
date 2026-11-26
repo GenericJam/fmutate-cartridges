@@ -1,22 +1,490 @@
 {
   "dinghy": {
     "commit": "ea1b6bf5973b11f9b4b806d08155602aaa0b505e",
-    "caps": {"pitch_bend": true, "note_pressure": true},
-    "notes": [60, 66],
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      60,
+      66
+    ],
     "bend_semitones": 2,
     "neutral": [
-      {"name": "fm1_default",
-       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy",
-       "compare": ["build/host/dinghy.wav"]},
-      {"name": "fm1_midi",
-       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy tests/scripts/midi.txt",
-       "compare": ["build/host/dinghy.wav"]},
-      {"name": "smk37_default",
-       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37",
-       "compare": ["build/host/dinghy-smk37.wav"]},
-      {"name": "smk37_wheel_pads",
-       "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37 tests/scripts/smk37.txt",
-       "compare": ["build/host/dinghy-smk37.wav"]}
+      {
+        "name": "fm1_default",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy",
+        "compare": [
+          "build/host/dinghy.wav"
+        ]
+      },
+      {
+        "name": "fm1_midi",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy firmware/src/dinghy.c && build/host/dinghy build/host/dinghy tests/scripts/midi.txt",
+        "compare": [
+          "build/host/dinghy.wav"
+        ]
+      },
+      {
+        "name": "smk37_default",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37",
+        "compare": [
+          "build/host/dinghy-smk37.wav"
+        ]
+      },
+      {
+        "name": "smk37_wheel_pads",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DBOARD_SMK37=1 -DAPP_VER='\"dev\"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/dinghy-smk37 firmware/src/dinghy.c && build/host/dinghy-smk37 build/host/dinghy-smk37 tests/scripts/smk37.txt",
+        "compare": [
+          "build/host/dinghy-smk37.wav"
+        ]
+      }
+    ]
+  },
+  "skiff": {
+    "commit": "392c1dfab4d8d2700e0d24f1ef61cc071d2529ab",
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      60,
+      66
+    ],
+    "bend_semitones": 2,
+    "setup": [
+      [
+        100,
+        [
+          [
+            192,
+            5,
+            0
+          ]
+        ]
+      ],
+      [
+        100,
+        [
+          [
+            176,
+            91,
+            0
+          ],
+          [
+            176,
+            93,
+            0
+          ],
+          [
+            176,
+            94,
+            0
+          ]
+        ]
+      ]
+    ],
+    "neutral": [
+      {
+        "name": "regress",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DC1_HOST=1 -DVOICES_2CORE=8 -pthread -Ibuild/gen -Ifirmware/src -Itests -o build/host/regress tests/regress.c -lm && env GOLDEN_UPDATE=1 build/host/regress build/host/golden.txt tests/cpu_baseline.txt && diff -u tests/golden.txt build/host/golden.txt",
+        "compare": [
+          "build/host/golden.txt"
+        ]
+      },
+      {
+        "name": "tracks",
+        "run": "mkdir -p build/host build/tracks_demo && cc -O2 -w {shim} -Ibuild/gen -Ifirmware/src -o build/host/hostsim tests/hostsim.c -lm && env TRACKS=build/tracks_demo build/host/hostsim 0 0 1 build/host/tracks.wav",
+        "compare": [
+          "build/tracks_demo/tracks_demo.wav",
+          "build/tracks_demo/t1_bass.wav",
+          "build/tracks_demo/t2_pad.wav",
+          "build/tracks_demo/t3_lead.wav",
+          "build/tracks_demo/t4_drums.wav",
+          "build/tracks_demo/steal.wav",
+          "build/tracks_demo/engine_switch.wav",
+          "build/tracks_demo/phase_dcw.wav"
+        ]
+      },
+      {
+        "name": "midi_chord_follow",
+        "run": "mkdir -p build/host && cc -O1 -w {shim} -Ibuild/gen -Ifirmware/src -o build/host/midi_control_test tests/midi_control_test.c -lm && cc -O1 -w {shim} -Ibuild/gen -Ifirmware/src -o build/host/chord_test tests/chord_test.c -lm && cc -O1 -w {shim} -Ibuild/gen -Ifirmware/src -o build/host/follow_test tests/follow_test.c -lm && { build/host/midi_control_test && build/host/chord_test && build/host/follow_test; } > build/host/midi_chord_follow.txt",
+        "compare": [
+          "build/host/midi_chord_follow.txt"
+        ]
+      }
+    ]
+  },
+  "caravel": {
+    "commit": "4c9612ccb6378f2f0750fad5a5e320b2e9cd7841",
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      60,
+      66
+    ],
+    "bend_semitones": 2,
+    "setup": [
+      [
+        100,
+        [
+          [
+            192,
+            5,
+            0
+          ]
+        ]
+      ],
+      [
+        100,
+        [
+          [
+            176,
+            91,
+            0
+          ],
+          [
+            176,
+            93,
+            0
+          ],
+          [
+            176,
+            94,
+            0
+          ]
+        ]
+      ]
+    ],
+    "neutral": [
+      {
+        "name": "regress",
+        "run": "mkdir -p build/host && cc -std=gnu11 -O2 -w -ffp-contract=off {shim} -DC1_HOST=1 -pthread -Ibuild/gen -Ifirmware/src -Itests -o build/host/regress tests/regress.c -lm && cp tests/golden.txt build/host/golden.txt && build/host/regress build/host/golden.txt tests/cpu_baseline.txt",
+        "compare": [
+          "build/host/golden.txt"
+        ]
+      },
+      {
+        "name": "midi_chord_latch",
+        "run": "mkdir -p build/host && F='-std=gnu11 -O2 -w -Wno-implicit-function-declaration -ffp-contract=off' && cc $F {shim} -Ibuild/gen -Ifirmware/src -Itests -o build/host/midi_control_test tests/midi_control_test.c -lm && cc $F {shim} -Ibuild/gen -Ifirmware/src -Itests -o build/host/chord_test tests/chord_test.c -lm && cc $F {shim} -Ibuild/gen -Ifirmware/src -Itests -o build/host/latch_test tests/latch_test.c -lm && { build/host/midi_control_test && build/host/chord_test && build/host/latch_test; } > build/host/midi_chord_latch.txt",
+        "compare": [
+          "build/host/midi_chord_latch.txt"
+        ]
+      }
+    ]
+  },
+  "fm106": {
+    "commit": "7129ecaf00f8303888896f614a7099bb64e35656",
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      60,
+      66
+    ],
+    "bend_semitones": 2,
+    "setup": [
+      [
+        100,
+        [
+          [
+            176,
+            87,
+            127
+          ],
+          [
+            176,
+            93,
+            0
+          ],
+          [
+            176,
+            84,
+            0
+          ],
+          [
+            176,
+            20,
+            0
+          ]
+        ]
+      ]
+    ],
+    "neutral": [
+      {
+        "name": "host_default",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/src -Ifirmware/gen -o build/host/fm106 firmware/src/fm106.c && build/host/fm106 build/host/fm106",
+        "compare": [
+          "build/host/fm106.wav"
+        ]
+      },
+      {
+        "name": "script_a11",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/src -Ifirmware/gen -o build/host/fm106 firmware/src/fm106.c && build/host/fm106 build/host/fm106-a11 tests/script_a11.txt",
+        "compare": [
+          "build/host/fm106-a11.wav"
+        ]
+      },
+      {
+        "name": "script_a21",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/src -Ifirmware/gen -o build/host/fm106 firmware/src/fm106.c && build/host/fm106 build/host/fm106-a21 tests/script_a21.txt",
+        "compare": [
+          "build/host/fm106-a21.wav"
+        ]
+      },
+      {
+        "name": "script_a22",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"dev\"' -Ifirmware/src -Ifirmware/gen -o build/host/fm106 firmware/src/fm106.c && build/host/fm106 build/host/fm106-a22 tests/script_a22.txt",
+        "compare": [
+          "build/host/fm106-a22.wav"
+        ]
+      }
+    ]
+  },
+  "grimm": {
+    "commit": "b519acbee7dbdb3e0fb82b15b86a913898c6f8f5",
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      60,
+      66
+    ],
+    "bend_semitones": 2,
+    "setup": [
+      [
+        100,
+        [
+          [
+            "enc",
+            5,
+            -100
+          ],
+          [
+            "btn",
+            6,
+            1
+          ]
+        ]
+      ],
+      [
+        100,
+        [
+          [
+            "btn",
+            6,
+            0
+          ]
+        ]
+      ],
+      [
+        100,
+        [
+          [
+            "enc",
+            3,
+            -10
+          ]
+        ]
+      ]
+    ],
+    "neutral": [
+      {
+        "name": "host_default",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"2.0\"' -Ifirmware/src -Ifirmware/gen -o build/host/grimm firmware/src/grimm.c && env GRIMM_MASTER=1022 GRIMM_RAW_OUT=build/host/grimm.raw build/host/grimm build/host/grimm",
+        "compare": [
+          "build/host/grimm.wav",
+          "build/host/grimm.raw"
+        ]
+      },
+      {
+        "name": "compat_and_units",
+        "run": "mkdir -p build/host build/compat && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"2.0\"' -Ifirmware/src -Ifirmware/gen -o build/host/grimm firmware/src/grimm.c && env GRIMM_SAVE_IN=tests/data/v1.0-saves.bin GRIMM_STATE_OUT=build/compat/v1.0-state.txt build/host/grimm build/compat/run tests/data/compat.txt > /dev/null && cmp -s tests/data/v1.0-state.txt build/compat/v1.0-state.txt && cc -O2 -w {shim} -Ifirmware/hal -o build/host/midi_uart_test tests/midi_uart_test.c && cc -O2 -w {shim} -Ifirmware/src -o build/host/uac_ring_test tests/uac_ring_test.c && { build/host/midi_uart_test && build/host/uac_ring_test; } > build/host/units.txt",
+        "compare": [
+          "build/compat/v1.0-state.txt",
+          "build/host/units.txt"
+        ]
+      },
+      {
+        "name": "tapeoff",
+        "run": "mkdir -p build/host && cc -O2 -w {shim} -DDINGHY_HOST -DAPP_VER='\"2.0\"' -Ifirmware/src -Ifirmware/gen -o build/host/grimm firmware/src/grimm.c && python3 tests/tapeoff_test.py build/host/grimm > build/host/tapeoff.txt",
+        "compare": [
+          "build/host/tapeoff.txt"
+        ]
+      }
+    ]
+  },
+  "frasil": {
+    "commit": "dd3cd7d11ce16b1cf345daf6b8d06a9cc7d31697",
+    "caps": {
+      "pitch_bend": true,
+      "note_pressure": true
+    },
+    "notes": [
+      48,
+      62
+    ],
+    "bend_semitones": 2,
+    "setup": [
+      [
+        200,
+        [
+          [
+            176,
+            70,
+            0
+          ],
+          [
+            176,
+            71,
+            127
+          ],
+          [
+            176,
+            72,
+            0
+          ],
+          [
+            176,
+            12,
+            127
+          ],
+          [
+            176,
+            17,
+            80
+          ],
+          [
+            176,
+            20,
+            0
+          ],
+          [
+            176,
+            25,
+            127
+          ],
+          [
+            176,
+            26,
+            127
+          ],
+          [
+            176,
+            27,
+            0
+          ],
+          [
+            176,
+            28,
+            0
+          ],
+          [
+            176,
+            29,
+            0
+          ],
+          [
+            176,
+            30,
+            0
+          ],
+          [
+            176,
+            31,
+            127
+          ],
+          [
+            176,
+            39,
+            127
+          ],
+          [
+            176,
+            44,
+            0
+          ],
+          [
+            176,
+            46,
+            0
+          ],
+          [
+            176,
+            73,
+            0
+          ],
+          [
+            176,
+            75,
+            5
+          ],
+          [
+            176,
+            79,
+            0
+          ],
+          [
+            176,
+            91,
+            0
+          ],
+          [
+            176,
+            108,
+            0
+          ],
+          [
+            176,
+            1,
+            0
+          ]
+        ]
+      ]
+    ],
+    "neutral": [
+      {
+        "name": "shape",
+        "run": "mkdir -p build/neutral && cc -O2 -ffp-contract=off -std=c99 -w {shim} -DFRS_LEAD=1 -Iengine -Iengine/dsp -o build/neutral/shape engine/tests/shape.c engine/frasil_stream.c engine/dsp/frasil.c engine/dsp/glint.c engine/dsp/bass.c engine/dsp/nuage.c engine/dsp/lead.c -lm && build/neutral/shape > build/neutral/shape.out",
+        "compare": [
+          "build/neutral/shape.out"
+        ]
+      },
+      {
+        "name": "chords",
+        "run": "mkdir -p build/neutral && cc -O2 -ffp-contract=off -std=c99 -w {shim} -DFRS_CHORDS=1 -DFRS_LEAD=1 -Iengine -Iengine/dsp -o build/neutral/chords engine/tests/chords.c engine/dsp/frasil.c engine/dsp/glint.c engine/dsp/bass.c engine/dsp/nuage.c engine/dsp/lead.c -lm && build/neutral/chords > build/neutral/chords.out",
+        "compare": [
+          "build/neutral/chords.out"
+        ]
+      },
+      {
+        "name": "chords_off",
+        "run": "mkdir -p build/neutral && cc -O2 -ffp-contract=off -std=c99 -w {shim} -DFRS_LEAD=1 -Iengine -Iengine/dsp -o build/neutral/chords_off engine/tests/chords.c engine/dsp/frasil.c engine/dsp/glint.c engine/dsp/bass.c engine/dsp/nuage.c engine/dsp/lead.c -lm && build/neutral/chords_off > build/neutral/chords_off.out",
+        "compare": [
+          "build/neutral/chords_off.out"
+        ]
+      },
+      {
+        "name": "morph",
+        "run": "mkdir -p build/neutral && cc -O2 -ffp-contract=off -std=c99 -w {shim} -Iengine -Iengine/dsp -o build/neutral/morph engine/tests/morph.c engine/frasil_stream.c engine/dsp/frasil.c engine/dsp/glint.c engine/dsp/bass.c engine/dsp/nuage.c -lm && build/neutral/morph > build/neutral/morph.out",
+        "compare": [
+          "build/neutral/morph.out"
+        ]
+      },
+      {
+        "name": "energy_scenes",
+        "run": "mkdir -p build/neutral && cc -O2 -ffp-contract=off -std=c99 -w {shim} -Iengine -Iengine/dsp -o build/neutral/energy_scenes engine/tests/energy_scenes.c engine/frasil_engine.c engine/dsp/frasil.c engine/dsp/glint.c engine/dsp/bass.c engine/dsp/nuage.c -lm && build/neutral/energy_scenes build/neutral",
+        "compare": [
+          "build/neutral/drones.frscene",
+          "build/neutral/drones-lfo.frscene",
+          "build/neutral/sharp.frscene",
+          "build/neutral/soft.frscene"
+        ]
+      }
     ]
   }
 }
