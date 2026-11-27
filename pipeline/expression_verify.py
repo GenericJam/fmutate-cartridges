@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 from common import CAT, HERE, PINS, SRC, target_cc
-from expression_config import entry, identity
+from expression_config import FELUCCA_FAMILY, entry, identity
 
 SHIM = HERE / 'shims/include'
 SHIM_FLAGS = f"-I{shlex.quote(str(SHIM))} -include {shlex.quote(str(SHIM / 'fm1_native_shims.h'))}"
@@ -77,6 +77,10 @@ def render(Engine, cart, stages):
             for message in messages:
                 if message[0] == 'key':                 # ('key', FM-1 key, down): the panel, op 0x01
                     engine.send(0x01, message[1], message[2])
+                elif message[0] == 'btn':               # ('btn', FM-1 button, down): op 0x02
+                    engine.send(0x02, message[1], message[2])
+                elif message[0] == 'enc':               # ('enc', FM-1 encoder, signed clicks): op 0x03
+                    engine.send(0x03, message[1], message[2] & 0xFF)
                 else:
                     engine.send(0x04, *message)
             samples = engine.drain(FS * ms // 1000)
@@ -100,7 +104,12 @@ def voice_lifecycle(fid):
     executable = CAT / 'obj/host' / fid / 'expression-lifecycle'
     executable.parent.mkdir(parents=True, exist_ok=True)
     cc, flags, _ = target_cc('host')
-    command = [*cc, *flags, '-O1', '-w', '-Ibuild/gen', '-Ifirmware/src', '-Itests',
+    extra = []
+    if (source / 'tests/ui_harness.h').is_file():
+        extra += ['-std=gnu11', '-Wno-implicit-function-declaration']
+    if (source / 'experiments/engine-pair-morph/pair_voice.c').is_file():
+        extra += ['-DFELUCCA_PAIR_MORPH=1', '-DFELUCCA_PERF_HW=1', '-DFELUCCA_CPU2=0']
+    command = [*cc, *flags, *extra, '-O1', '-w', '-Ibuild/gen', '-Ifirmware/src', '-Itests',
                str(HERE / 'expression_felucca.c'), '-o', str(executable), '-lm']
     compiled = subprocess.run(command, cwd=source, capture_output=True, text=True, timeout=120)
     if compiled.returncode:
@@ -194,7 +203,7 @@ def exercise(fid, Engine, cart):
     key_cents = [float(1200 * math.log2(pitch(audio, a) / base)) for audio in keyed]
     checks['key_bend'] = {'ok': abs(key_cents[1] - expected) <= 20 and abs(key_cents[2]) <= 10,
                           'cents': key_cents}
-    if fid in ('skiff', 'caravel'):
+    if fid in FELUCCA_FAMILY:
         checks['voice_lifecycle'] = voice_lifecycle(fid)
     return checks
 

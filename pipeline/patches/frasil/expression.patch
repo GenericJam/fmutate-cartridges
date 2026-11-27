@@ -1,0 +1,1905 @@
+FMutate expressive controls for FRASIL 3.4.1 (MPL-2.0, Copyright (C) 2026 Styves Goupil; preserving upstream attribution).
+
+Adds volatile per-channel MIDI pitch bend (0xEn, +-2 semitones, center 8192, endpoints 0/16383,
+routed to tracks listening on each channel and panel keys via the active keyboard track's channel,
+combined with the SMK-37 physical pitch wheel on LEAD) and per-note square-law MIDI polyphonic
+aftertouch expression gain (0xAn, 127 unity, 0 silent) with per-voice smoothing, channel and
+source-key isolation (panel keys and internal sequencers unaffected), release-tail preservation,
+and new-note/retrigger/steal reset across DRONE, GLINT, BASS, and LEAD; CC120 and CC123 release
+notes while preserving held pitch bend, and CC121 resets pitch bend and polyphonic expression
+without releasing held notes. Channel pressure (0xDn), CC11 swell, and SMK-37 key pressure remain
+unchanged. Neutral sound without MIDI polyphonic pressure or pitch bend is bit-identical to stock
+and persisted scene/state/live layouts are untouched.
+
+--- a/engine/chords.c
++++ b/engine/chords.c
+@@ -14,9 +14,11 @@
+ #undef frasil_note_off
+ #undef frasil_all_off
+ #undef frasil_pressure
++#undef frasil_note_exp
+ #undef frasil_glint_on
+ #undef frasil_glint_off
+ #undef frasil_glint_pressure
++#undef frasil_glint_exp
+ #undef frasil_bass_on
+ #undef frasil_bass_retune
+ #if FRS_LEAD
+@@ -24,6 +26,7 @@
+ #undef frasil_lead_poly_on
+ #undef frasil_lead_poly_off
+ #undef frasil_lead_pressure
++#undef frasil_lead_exp
+ #endif
+ 
+ /* ---------------------------------------------------------------- chords --- */
+@@ -409,6 +412,8 @@
+     cm_glide_run();
+ }
+ 
++static uint32_t cm_exp_dirty[4];
++
+ static void cm_give(void)                /* the drones given back: what the brain holds there sounds again */
+ {
+     uint32_t n;
+@@ -418,12 +423,18 @@
+     cm.g_n = cm.g_done = 0;
+     for (n = 0; n < 128u; n++) {
+         int s = bit_get(cm.snd, (int)n), h = held_by[n] != 0;
+-        if (s && !h)
++        if (s && !h) {
+             frasil_note_off((int)n);
+-        else if (h && !s)
++        } else if (h && !s) {
+             frasil_note_on((int)n, 100.0f * (1.0f / 127.0f));
++            if (dr_exp_sent[n] != 1.0f)
++                frasil_note_exp((int)n, dr_exp_sent[n]);
++        } else if (h && (dr_exp_sent[n] != 1.0f || bit_get(cm_exp_dirty, (int)n))) {
++            frasil_note_exp((int)n, dr_exp_sent[n]);
++        }
+     }
+     memset(cm.snd, 0, sizeof cm.snd);
++    memset(cm_exp_dirty, 0, sizeof cm_exp_dirty);
+ }
+ 
+ /* ---- the bass ---- */
+@@ -588,11 +599,20 @@
+ {
+     if (!cm.hold)
+         frasil_pressure(note, p);
++}
++
++static void cm_note_exp(int note, float g)
++{
++    if (!cm.hold)
++        frasil_note_exp(note, g);
++    else
++        bit_put(cm_exp_dirty, note, 1);
+ }
+ 
+ static void cm_all_off(void)             /* every drone note let go: the move's too, the drones given back */
+ {
+     frasil_all_off();
++    memset(cm_exp_dirty, 0, sizeof cm_exp_dirty);
+     cm.hold = 0;
+     cm.g_n = cm.g_done = 0;
+     memset(cm.snd, 0, sizeof cm.snd);
+@@ -623,6 +643,11 @@
+     frasil_glint_pressure(note >= 0 && note < 128 && cm.gsnd[note] ? cm.gsnd[note] - 1 : note, p);
+ }
+ 
++static void cm_glint_exp(int note, float g)
++{
++    frasil_glint_exp(note >= 0 && note < 128 && cm.gsnd[note] ? cm.gsnd[note] - 1 : note, g);
++}
++
+ static void cm_bass_on(int note, float vel)
+ {
+     cm.bvel = vel;
+@@ -666,4 +691,9 @@
+ {
+     frasil_lead_pressure(note >= 0 && note < 128 && cm.lsnd[note] ? cm.lsnd[note] - 1 : note, p);
+ }
++
++static void cm_lead_exp(int note, float g)
++{
++    frasil_lead_exp(note >= 0 && note < 128 && cm.lsnd[note] ? cm.lsnd[note] - 1 : note, g);
++}
+ #endif
+--- a/engine/chords.h
++++ b/engine/chords.h
+@@ -12,18 +12,22 @@
+ static void cm_note_off(int note);
+ static void cm_all_off(void);
+ static void cm_pressure(int note, float p);
++static void cm_note_exp(int note, float g);
+ static void cm_glint_on(int note, float vel);
+ static void cm_glint_off(int note);
+ static void cm_glint_pressure(int note, float p);
++static void cm_glint_exp(int note, float g);
+ static void cm_bass_on(int note, float vel);
+ static void cm_bass_retune(int note, float vel);
+ #define frasil_note_on cm_note_on
+ #define frasil_note_off cm_note_off
+ #define frasil_all_off cm_all_off
+ #define frasil_pressure cm_pressure
++#define frasil_note_exp cm_note_exp
+ #define frasil_glint_on cm_glint_on
+ #define frasil_glint_off cm_glint_off
+ #define frasil_glint_pressure cm_glint_pressure
++#define frasil_glint_exp cm_glint_exp
+ #define frasil_bass_on cm_bass_on
+ #define frasil_bass_retune cm_bass_retune
+ #if FRS_LEAD
+@@ -31,10 +35,12 @@
+ static void cm_lead_poly_on(int note, float vel);
+ static void cm_lead_poly_off(int note);
+ static void cm_lead_pressure(int note, float p);
++static void cm_lead_exp(int note, float g);
+ #define frasil_lead_on cm_lead_on
+ #define frasil_lead_poly_on cm_lead_poly_on
+ #define frasil_lead_poly_off cm_lead_poly_off
+ #define frasil_lead_pressure cm_lead_pressure
++#define frasil_lead_exp cm_lead_exp
+ #endif
+ 
+ static void cm_init(void);               /* (frs_init: no move, every track following) */
+--- a/engine/core.c
++++ b/engine/core.c
+@@ -84,6 +84,14 @@
+ static int8_t mgl_base[128];             /* each one's note without GLINT's OCTAVE, as the arpeggio has it */
+ static int8_t mbass[8];                  /* BASS's notes held from MIDI, the last on top (it sounds) */
+ static uint32_t mb_n;
++/* volatile MIDI expression: per-channel pitch bend (-2..+2 semitones) and per-note square-law polyphonic pressure gain
++ * (0..1; 1 unity, 0 silent), isolated by source MIDI channel and key */
++static uint8_t mid_ch[128], mgl_ch[128], mb_ch[8], last_bend_ch, midi_in_ch = 16u;
++static float mid_exp[128], dr_exp_sent[128], mgl_exp[128], mb_exp[8], bs_exp_sent = 1.0f;
++static float midi_bend[16], sent_bend[4];
++#if FRS_LEAD
++static float wheel_bend;
++#endif
+ 
+ static int bit_get(const uint32_t *b, int n) { return n >= 0 && n < 128 && (b[n >> 5] >> (n & 31) & 1u); }
+ static void bit_put(uint32_t *b, int n, int on)
+@@ -125,6 +133,8 @@
+     float prs[16];                       /* and how hard each is pressed */
+     int8_t play[16];                     /* the notes playing: held's, taken at the next step (on RATE's grid) */
+     float pprs[16];
++    float exp[16], pexp[16];             /* MIDI polyphonic expression gain per held / playing step (1 unity) */
++    uint8_t ch[16];                      /* source MIDI channel per held note (0..15, or >=16 panel/scene) */
+     uint8_t pn, dirty;                   /* how many play; held changed since the last step */
+     int32_t step_n;                      /* the step of the grid at the last run */
+     int8_t src;                          /* the held note the sounding step comes from */
+@@ -757,13 +767,46 @@
+     return (int8_t)(b < 0 ? 0 : b > 127 ? 127 : b);
+ }
+ 
++static int chord_has(const chord_t *c, int n);
++static float dr_exp_of(int n)
++{
++    uint32_t m, mcnt = 0;
++    float best = 0.0f;
++    if (!held_by[n])
++        return 1.0f;
++    for (m = 0; m < 128u; m++)
++        if (bit_get(mid_on, (int)m) && chord_has(&mid[m], n)) {
++            mcnt++;
++            if (mid_exp[m] > best)
++                best = mid_exp[m];
++        }
++    return held_by[n] > mcnt ? 1.0f : mcnt ? best : 1.0f;
++}
++static void dr_exp_sync(int n)
++{
++    int s;
++    float g;
++    if (n < 0 || n > 127 || !held_by[n])
++        return;
++    s = n + dr_d[n];
++    if (s < 0 || s > 127 || !dr_snd[s])
++        return;
++    g = dr_exp_of(n);
++    if (g != dr_exp_sent[s]) {
++        dr_exp_sent[s] = g;
++        frasil_note_exp(s, g);
++    }
++}
++
+ static void dr_on(int n, uint32_t vel)   /* a drone note held (its first chord): struck where the link has it */
+ {
+     int s = lk_note(LK_DRONE, n);
+     dr_d[n] = (int8_t)(s - n);
+     dr_vel[n] = (uint8_t)(vel > 127u ? 127u : vel);
+-    if (dr_snd[s]++ == 0)
++    if (dr_snd[s]++ == 0) {
++        dr_exp_sent[s] = 1.0f;
+         frasil_note_on(s, (float)vel * (1.0f / 127.0f));
++    }
+ }
+ static void dr_off(int n)                /* let go (its last chord), where it went */
+ {
+@@ -793,8 +836,10 @@
+         frasil_all_off();
+         memset(dr_snd, 0, sizeof dr_snd);
+         for (n = 0; n < 128; n++)
+-            if (held_by[n])
++            if (held_by[n]) {
+                 dr_on(n, dr_vel[n]);
++                dr_exp_sync(n);
++            }
+         return;
+     }
+     for (n = 0; n < 128; n++)
+@@ -804,8 +849,10 @@
+                 frasil_note_off(s);
+         }
+     for (n = 0; n < 128; n++)
+-        if (bit_get(moved, n))
++        if (bit_get(moved, n)) {
+             dr_on(n, dr_vel[n]);
++            dr_exp_sync(n);
++        }
+ }
+ 
+ static void lk_bass(void)                /* the bass's note sounding, retuned where the link has it now (NOTES OUT's
+@@ -989,6 +1036,8 @@
+     for (i = 0; i < c->k; i++)
+         if (held_by[(uint8_t)c->n[i]]++ == 0)
+             dr_on(c->n[i], vel);
++        else
++            dr_exp_sync(c->n[i]);
+     if (c->k) {                          /* (TRACKS LINK: the drone's root struck last) */
+         lk.dlast = c->n[0];
+         if (lk.on && !lk.follow)
+@@ -1000,8 +1049,12 @@
+ {
+     uint32_t i;
+     for (i = 0; i < c->k; i++)
+-        if (held_by[(uint8_t)c->n[i]] && --held_by[(uint8_t)c->n[i]] == 0)
+-            dr_off(c->n[i]);
++        if (held_by[(uint8_t)c->n[i]]) {
++            if (--held_by[(uint8_t)c->n[i]] == 0)
++                dr_off(c->n[i]);
++            else
++                dr_exp_sync(c->n[i]);
++        }
+ }
+ 
+ static void chord_press(const chord_t *c, float p)
+@@ -1043,6 +1096,7 @@
+     bass_note = (int8_t)note;
+     lk.bs = (int8_t)lk_note(LK_BASS, note);   /* (TRACKS LINK's: out where it has it) */
+     lk.bvel = (uint8_t)(vel > 127u ? 127u : vel);
++    bs_exp_sent = 1.0f;
+     frasil_bass_on(lk.bs, (float)vel * (1.0f / 127.0f));
+     bp.ng = grid.tick;
+     bp.fresh = 1;
+@@ -1058,6 +1112,10 @@
+         bass_play(note, vel);
+         return;
+     }
++    if (bs_exp_sent != 1.0f) {
++        bs_exp_sent = 1.0f;
++        frasil_bass_exp(1.0f);
++    }
+     note = note < 0 ? 0 : note > 127 ? 127 : note;
+     if (note == bass_note)
+         return;
+@@ -1103,8 +1161,10 @@
+ {
+     uint32_t k;
+     frasil_all_off();
+-    for (k = 0; k < 128u; k++)
++    for (k = 0; k < 128u; k++) {
+         held_by[k] = dr_snd[k] = 0;
++        mid_exp[k] = dr_exp_sent[k] = 1.0f;
++    }
+     dq.nsnd = 0;                         /* (the drone's sequence's notes too: its next step strikes its own) */
+     for (k = 0; k < 4u; k++)
+         lit[k] = mid_on[k] = sus[k] = 0;
+@@ -1119,6 +1179,9 @@
+     release_drones();
+     bass_stop();
+     mb_n = 0;
++    for (k = 0; k < 8u; k++)
++        mb_exp[k] = 1.0f;
++    bs_exp_sent = 1.0f;
+     midi_glints_off();
+     gl_off(-1);                          /* (and every glint still ringing: keys', SPARKLE's) */
+     GEN_CUT(7u);
+@@ -2481,6 +2544,7 @@
+  * drones' is KEY MODE's (P_KEYS: LATCH on, HOLD off) */
+ static void arp_keep_held(arp_t *a);     /* (the arpeggiator, below) */
+ static void anc_hand(int p);             /* (ANCHOR, below) */
++static void bend_sync(void);
+ static void keys_set(int p, int32_t x)
+ {
+     uint32_t k, r;
+@@ -2562,6 +2626,8 @@
+         st.lead = x == 3;
+ #endif
+     }
++    if (p == P_KB || p == P_CANAL || p == P_CH_GLINT || p == P_CH_BASS)
++        bend_sync();
+     if (p == P_FREEZE)
+         st.engine_dirty = 1;
+     if (p == P_SPEAKER || p == P_ANIM || p == P_CLOCK || p == P_SAVER || p == P_TRANSPORT)   /* (the runner's: SPK/JACK's
+@@ -2849,6 +2915,8 @@
+         a->held[i] = notes[i];
+         a->in[i] = ++a->ins;
+         a->prs[i] = 0.0f;
++        a->exp[i] = 1.0f;
++        a->ch[i] = 16u;
+     }
+     a->n = (uint8_t)i;
+     a->dirty = 1;                        /* from the next step */
+@@ -3649,24 +3717,33 @@
+ }
+ static uint32_t arp_rand(void) { return a_rand(&arp); }
+ 
++static void arp_exp(arp_t *a, int n, float g);
++
+ static void arp_add(arp_t *a, int note, uint32_t vel)
+ {
+     uint32_t i, j;
+-    if (a->n >= 16u)
+-        return;
+     for (i = 0; i < a->n; i++)
+-        if (a->held[i] == note)
++        if (a->held[i] == note) {
++            a->ch[i] = midi_in_ch;
++            arp_exp(a, note, 1.0f);
+             return;
++        }
++    if (a->n >= 16u)
++        return;
+     for (i = 0; i < a->n && a->held[i] < note; i++)
+         ;
+     for (j = a->n; j > i; j--) {
+         a->held[j] = a->held[j - 1];
+         a->in[j] = a->in[j - 1];
+         a->prs[j] = a->prs[j - 1];
++        a->exp[j] = a->exp[j - 1];
++        a->ch[j] = a->ch[j - 1];
+     }
+     a->held[i] = (int8_t)note;
+     a->in[i] = ++a->ins;
+     a->prs[i] = 0.0f;
++    a->exp[i] = 1.0f;
++    a->ch[i] = midi_in_ch;
+     a->n++;
+     a->dirty = 1;                        /* it plays from the next step (ARP SNAP: on its grid) */
+     a->chg_ms = eng_ms();
+@@ -3682,6 +3759,8 @@
+                 a->held[j] = a->held[j + 1u];
+                 a->in[j] = a->in[j + 1u];
+                 a->prs[j] = a->prs[j + 1u];
++                a->exp[j] = a->exp[j + 1u];
++                a->ch[j] = a->ch[j + 1u];
+             }
+             a->n--;
+             a->dirty = 1;
+@@ -4181,6 +4260,7 @@
+     for (i = 0; i < a->n; i++) {
+         a->play[i] = a->held[i];
+         a->pprs[i] = a->prs[i];
++        a->pexp[i] = a->exp[i];
+     }
+     a->pn = a->n;
+     a->idx = -1;
+@@ -4251,6 +4331,8 @@
+             gl_on(note, v);
+             if (a->pprs[at] > 0.0f)      /* its key pressed: the step louder */
+                 gl_prs(note, a->pprs[at]);
++            if (a->pexp[at] != 1.0f)
++                frasil_glint_exp(gl_at(note), a->pexp[at]);
+             GEN_NOTE(GEN_ARP, note, v);
+ #if FRS_MIDI_OUT
+         } else if (a == &marp) {         /* MIDI's: out on its channel */
+@@ -4260,6 +4342,10 @@
+             bass_play(note, (uint32_t)(v * 127.0f));
+             if (a->pprs[at] > 0.0f)
+                 frasil_bass_pressure(a->pprs[at]);
++            if (a->pexp[at] != 1.0f) {
++                bs_exp_sent = a->pexp[at];
++                frasil_bass_exp(bs_exp_sent);
++            }
+             GEN_NOTE(GEN_BASS, bass_note, v);
+         }
+         a->src = a->play[at];
+@@ -4675,8 +4761,118 @@
+ static int on_ch(int p, uint32_t c) { return st.v[p] > 16u || (st.v[p] && st.v[p] == c); }
+ #if FRS_LEAD
+ static int ld_on_ch(uint32_t c) { return st.ldch > 16u || (st.ldch && st.ldch == c); }
++#endif
++
++static float midi_exp_curve(uint32_t val)
++{
++    float x = (float)val * (1.0f / 127.0f);
++    return val >= 127u ? 1.0f : x * x;
++}
++
++static float trk_midi_bend(uint32_t ch_set, int panel_here)
++{
++    if (ch_set >= 1u && ch_set <= 16u)
++        return midi_bend[ch_set - 1u];
++    if (ch_set > 16u)
++        return midi_bend[last_bend_ch & 15u];
++    return panel_here ? midi_bend[0] : 0.0f;
++}
++
++static void bend_sync(void)
++{
++    int kb = st.v[P_KB];
++    float b0 = trk_midi_bend(st.v[P_CANAL], kb == 0);
++    float b1 = trk_midi_bend(st.v[P_CH_GLINT], kb == 1);
++    float b2 = trk_midi_bend(st.v[P_CH_BASS], kb == 2);
++    if (b0 != sent_bend[0]) {
++        sent_bend[0] = b0;
++        frasil_bend(b0);
++    }
++    if (b1 != sent_bend[1]) {
++        sent_bend[1] = b1;
++        frasil_glint_bend(b1);
++    }
++    if (b2 != sent_bend[2]) {
++        sent_bend[2] = b2;
++        frasil_bass_bend(b2);
++    }
++#if FRS_LEAD
++    {
++        float b3 = wheel_bend + trk_midi_bend(st.ldch, kb == 3);
++        if (b3 != sent_bend[3]) {
++            sent_bend[3] = b3;
++            frasil_lead_bend(b3);
++        }
++    }
+ #endif
++}
+ 
++static int glint_non_midi(int n)
++{
++    uint32_t k, i;
++    if (sq.sounding == n || ring_has(n) || bit_get(hold_k, n))
++        return 1;
++    for (k = 0; k < FRS_NKEYS; k++)
++        if (key[k].kind == K_GLINT)
++            for (i = 0; i < key[k].chord.k; i++)
++                if (key[k].chord.n[i] == n)
++                    return 1;
++    return 0;
++}
++
++static int arp_panel_held(const arp_t *a, int n, uint32_t except_k)
++{
++    uint32_t k, j, kind = a == &arp ? K_GLINT : K_BARP;
++    if (bit_get(a == &arp ? hold_a : hold_ba, n))
++        return 1;
++    for (k = 0; k < FRS_NKEYS; k++)
++        if (k != except_k && key[k].kind == kind)
++            for (j = 0; j < key[k].chord.k; j++)
++                if (key[k].chord.n[j] == n)
++                    return 1;
++    return 0;
++}
++
++static void arp_ch_set(arp_t *a, int n, uint8_t ch)
++{
++    uint32_t i;
++    for (i = 0; i < a->n; i++)
++        if (a->held[i] == n)
++            a->ch[i] = ch;
++}
++
++static void arp_exp(arp_t *a, int n, float g)
++{
++    uint32_t i;
++    for (i = 0; i < a->n; i++)
++        if (a->held[i] == n)
++            a->exp[i] = g;
++    for (i = 0; i < a->pn; i++)
++        if (a->play[i] == n)
++            a->pexp[i] = g;
++    if (a->sounding >= 0 && a->src == n) {
++        if (a == &arp) {
++            frasil_glint_exp(gl_at(a->sounding), g);
++        } else if (g != bs_exp_sent) {
++            bs_exp_sent = g;
++            frasil_bass_exp(g);
++        }
++    }
++}
++
++static void glint_note_exp(int n, float g)
++{
++    if (seq_keys())
++        return;
++    if (st.v[P_SQ_TYPE] == SQT_ARP) {
++        int b = bit_get(mgl, n) ? mgl_base[n] : n;
++        if (!arp_panel_held(&arp, b, FRS_NKEYS))
++            arp_exp(&arp, b, g);
++    } else if (!glint_non_midi(n)) {
++        frasil_glint_exp(gl_at(n), g);
++    }
++}
++
+ static void midi_glint_on(int n, uint32_t vel)
+ {
+     uint32_t i, held = 0;
+@@ -4684,6 +4880,8 @@
+     for (i = 0; i < 4u; i++)
+         held |= mgl[i];
+     bit_put(mgl, n, 1);
++    mgl_ch[n] = midi_in_ch;
++    mgl_exp[n] = 1.0f;
+     mgl_base[n] = (int8_t)n;             /* (as it comes: OCTAVE on it in the engine, as on a key's) */
+     bit_put(mgs, n, sk ? st.v[P_SQ_REC] != 0 : st.v[P_SQ_TYPE] != SQT_ARP);
+     if (sk) {                            /* into the sequencer, as a key would */
+@@ -4707,6 +4905,7 @@
+     if (!bit_get(mgl, n))
+         return;
+     bit_put(mgl, n, 0);
++    mgl_exp[n] = 1.0f;
+     if (bit_get(mgs, n) && sq.sounding != n && !ring_has(n))
+         gl_off(n);
+     bit_put(mgs, n, 0);
+@@ -4725,14 +4924,23 @@
+ {
+     uint32_t i, j;
+     for (i = j = 0; i < mb_n; i++)
+-        if (mbass[i] != n)
+-            mbass[j++] = mbass[i];
++        if (mbass[i] != n || mb_ch[i] != midi_in_ch) {
++            mbass[j] = mbass[i];
++            mb_ch[j] = mb_ch[i];
++            mb_exp[j] = mb_exp[i];
++            j++;
++        }
+     mb_n = j;
+     if (mb_n == sizeof mbass) {          /* full: the oldest goes */
+-        for (i = 1; i < mb_n; i++)
++        for (i = 1; i < mb_n; i++) {
+             mbass[i - 1] = mbass[i];
++            mb_ch[i - 1] = mb_ch[i];
++            mb_exp[i - 1] = mb_exp[i];
++        }
+         mb_n--;
+     }
++    mb_ch[mb_n] = midi_in_ch;
++    mb_exp[mb_n] = 1.0f;
+     mbass[mb_n++] = (int8_t)n;
+     if (bseq_keys()) {                   /* into the bass's sequence, as a key would */
+         bseq_key(n, n, vel);
+@@ -4750,11 +4958,19 @@
+ 
+ static void midi_bass_off(int n)          /* the one on top let go: back to the one under it, else silence */
+ {
+-    uint32_t i, j;
++    uint32_t i, j, found = 0;
+     int top = mb_n ? mbass[mb_n - 1] : -1;
+     for (i = j = 0; i < mb_n; i++)
+-        if (mbass[i] != n)
+-            mbass[j++] = mbass[i];
++        if (mbass[i] == n && (midi_in_ch >= 16u || mb_ch[i] == midi_in_ch)) {
++            found = 1;
++        } else {
++            mbass[j] = mbass[i];
++            mb_ch[j] = mb_ch[i];
++            mb_exp[j] = mb_exp[i];
++            j++;
++        }
++    if (!found)
++        return;
+     mb_n = j;
+     if (bseq_keys()) {                   /* (the bass's sequence's) */
+         bseq_up(n);
+@@ -4764,20 +4980,72 @@
+         arp_remove(&barp, n);            /* (if it was arpeggiated; latched, it stays) */
+     if (st.v[P_BQ_ON] == SQT_ARP || n != top || bass_note != n)
+         return;                          /* not the one sounding (or the keys have the bass now) */
+-    if (mb_n)
++    if (mb_n) {
+         bass_live(mbass[mb_n - 1], 100);
+-    else
++        if (mb_exp[mb_n - 1] != bs_exp_sent) {
++            bs_exp_sent = mb_exp[mb_n - 1];
++            frasil_bass_exp(bs_exp_sent);
++        }
++    } else {
+         bass_stop();
++    }
+ }
+ 
+ static void midi_note_off(int n)
+ {
++    uint32_t i;
+     if (!bit_get(mid_on, n))
+         return;
+     chord_off(&mid[n]);
+     bit_put(mid_on, n, 0);
++    mid_exp[n] = 1.0f;
++    for (i = 0; i < mid[n].k; i++)
++        if (held_by[(uint8_t)mid[n].n[i]])
++            dr_exp_sync(mid[n].n[i]);
+ }
+ 
++static void midi_dr_exp_reset(uint32_t ch)
++{
++    uint32_t m, i;
++    for (m = 0; m < 128u; m++)
++        if (bit_get(mid_on, (int)m) && mid_ch[m] == ch && mid_exp[m] != 1.0f) {
++            mid_exp[m] = 1.0f;
++            for (i = 0; i < mid[m].k; i++)
++                dr_exp_sync(mid[m].n[i]);
++        }
++}
++
++static void midi_gl_exp_reset(uint32_t ch)
++{
++    uint32_t m;
++    for (m = 0; m < 128u; m++)
++        if (bit_get(mgl, (int)m) && mgl_ch[m] == ch && mgl_exp[m] != 1.0f) {
++            mgl_exp[m] = 1.0f;
++            glint_note_exp((int)m, 1.0f);
++        }
++    for (m = 0; m < arp.n; m++)
++        if (arp.ch[m] == ch && arp.exp[m] != 1.0f)
++            arp_exp(&arp, arp.held[m], 1.0f);
++}
++
++static void midi_bs_exp_reset(uint32_t ch)
++{
++    uint32_t i;
++    for (i = 0; i < mb_n; i++)
++        if (mb_ch[i] == ch && mb_exp[i] != 1.0f) {
++            mb_exp[i] = 1.0f;
++            if (st.v[P_BQ_ON] == SQT_ARP) {
++                arp_exp(&barp, mbass[i], 1.0f);
++            } else if (!bseq_keys() && i + 1u == mb_n && bass_note == mbass[i] && bs_exp_sent != 1.0f) {
++                bs_exp_sent = 1.0f;
++                frasil_bass_exp(1.0f);
++            }
++        }
++    for (i = 0; i < barp.n; i++)
++        if (barp.ch[i] == ch && barp.exp[i] != 1.0f)
++            arp_exp(&barp, barp.held[i], 1.0f);
++}
++
+ static int arp_plays(void) { return st.v[P_SQ_TYPE] == SQT_ARP || (!st.v[P_SQ_TYPE] && arp.n); }
+ static int holding_any(void)
+ {
+@@ -5034,6 +5302,8 @@
+ #if FRS_LEAD
+ static void midi_lead_on(int n, uint32_t vel);   /* (the LEAD's on LEAD CH, card #228: below) */
+ static void midi_lead_press(int n, float f);
++static void midi_lead_exp(int n, uint32_t ch, float g);
++static void midi_ld_exp_reset(uint32_t ch);
+ #endif
+ static void eng_midi(uint32_t pkt)
+ {
+@@ -5062,6 +5332,17 @@
+         if (kind == 0xB0u && d1 == 120u) {           /* all sound off: everything, whatever the channel */
+             sound_off();
+             return;
++        }
++        if (kind == 0xE0u) {                         /* pitch bend: +-2 semitones, per MIDI channel */
++            int32_t v = (int32_t)(d1 | (d2 << 7)) - 8192;
++            midi_bend[ch] = v >= 0 ? (float)v * (2.0f / 8191.0f) : (float)v * (2.0f / 8192.0f);
++            last_bend_ch = (uint8_t)ch;
++            bend_sync();
++            return;
++        }
++        if (kind == 0xB0u && d1 == 121u) {           /* reset all controllers: bend back to center on this channel */
++            midi_bend[ch] = 0.0f;
++            bend_sync();
+         }
+         dr = on_ch(P_CANAL, ch + 1u);
+         gl = on_ch(P_CH_GLINT, ch + 1u);
+@@ -5071,10 +5352,13 @@
+ #endif
+         if (!dr && !gl && !bs && !ld)
+             return;
++        midi_in_ch = (uint8_t)ch;
+         if (kind == 0x90u && d2) {                   /* a note */
+             if (dr) {                                /* the drones: its chord, held until its note-off */
+                 midi_note_off((int)d1);
+                 bit_put(sus, (int)d1, 0);
++                mid_ch[d1] = (uint8_t)ch;
++                mid_exp[d1] = 1.0f;
+                 key_notes(0, touch_set(0), (int)d1, 0, &mid[d1], &root);   /* (HARMONY, NOTES: the drones' KEYS) */
+                 chord_on(&mid[d1], d2);
+                 bit_put(mid_on, (int)d1, 1);
+@@ -5089,13 +5373,13 @@
+                 midi_lead_on((int)d1, d2);
+ #endif
+         } else if (kind == 0x80u || kind == 0x90u) {
+-            if (dr) {
++            if (dr && mid_ch[d1] == ch) {
+                 if (st.sustain)
+                     bit_put(sus, (int)d1, 1);
+                 else
+                     midi_note_off((int)d1);
+             }
+-            if (gl)
++            if (gl && mgl_ch[d1] == ch)
+                 midi_glint_off((int)d1);
+             if (bs)
+                 midi_bass_off((int)d1);
+@@ -5103,19 +5387,33 @@
+             if (ld)
+                 midi_lead_up((int)d1);
+ #endif
+-        } else if (kind == 0xA0u) {                  /* a note's pressure */
+-            float f = (float)d2 * (1.0f / 127.0f);
+-            if (dr && bit_get(mid_on, (int)d1))
+-                chord_press(&mid[d1], f);
+-            if (gl && bit_get(mgl, (int)d1))
+-                glint_note_press((int)d1, f);
+-            if (bs && mb_n && st.v[P_BQ_ON] == SQT_ARP)
+-                arp_press(&barp, (int)d1, f);
+-            else if (bs && mb_n && mbass[mb_n - 1] == (int8_t)d1 && bass_note == (int)d1)
+-                frasil_bass_pressure(f);
++        } else if (kind == 0xA0u) {                  /* per-note square-law polyphonic expression (127 unity, 0 silent) */
++            float g = midi_exp_curve(d2);
++            if (dr && bit_get(mid_on, (int)d1) && mid_ch[d1] == ch) {
++                mid_exp[d1] = g;
++                for (i = 0; i < mid[d1].k; i++)
++                    dr_exp_sync(mid[d1].n[i]);
++            }
++            if (gl && bit_get(mgl, (int)d1) && mgl_ch[d1] == ch) {
++                mgl_exp[d1] = g;
++                glint_note_exp((int)d1, g);
++            }
++            if (bs && mb_n) {
++                for (i = 0; i < mb_n; i++)
++                    if (mbass[i] == (int8_t)d1 && mb_ch[i] == ch) {
++                        mb_exp[i] = g;
++                        if (st.v[P_BQ_ON] == SQT_ARP) {
++                            if (!arp_panel_held(&barp, (int)d1, FRS_NKEYS))
++                                arp_exp(&barp, (int)d1, g);
++                        } else if (!bseq_keys() && i + 1u == mb_n && bass_note == (int)d1 && g != bs_exp_sent) {
++                            bs_exp_sent = g;
++                            frasil_bass_exp(g);
++                        }
++                    }
++            }
+ #if FRS_LEAD
+             if (ld)
+-                midi_lead_press((int)d1, f);
++                midi_lead_exp((int)d1, ch, g);
+ #endif
+         } else if (kind == 0xD0u) {                  /* the channel's: every note of the track */
+             float f = (float)d1 * (1.0f / 127.0f);
+@@ -5140,7 +5438,30 @@
+             if (ld && d1 == 1u)                      /* the mod wheel: the LEAD's VIBRATO, as the SMK-37's own wheel */
+                 frasil_lead_mod((float)d2 * (1.0f / 127.0f));
+ #endif
+-            if (d1 == 64u && !dr) {
++            if (d1 == 121u) {                        /* reset all controllers: bend and poly expression back to neutral */
++                if (dr) {
++                    st.swell_midi = 0.0f;
++                    if (st.sustain) {
++                        st.sustain = 0;
++                        for (i = 0; i < 128u; i++)
++                            if (bit_get(sus, (int)i)) {
++                                bit_put(sus, (int)i, 0);
++                                midi_note_off((int)i);
++                            }
++                    }
++                    midi_dr_exp_reset(ch);
++                }
++                if (gl)
++                    midi_gl_exp_reset(ch);
++                if (bs)
++                    midi_bs_exp_reset(ch);
++#if FRS_LEAD
++                if (ld) {
++                    frasil_lead_mod(0.0f);
++                    midi_ld_exp_reset(ch);
++                }
++#endif
++            } else if (d1 == 64u && !dr) {
+                 /* sustain: the drones' alone */
+             } else if (d1 == 64u) {                  /* sustain: the notes let go meanwhile go out with it */
+                 st.sustain = d2 >= 64u;
+@@ -5150,7 +5471,7 @@
+                             bit_put(sus, (int)i, 0);
+                             midi_note_off((int)i);
+                         }
+-            } else if (d1 == 123u) {             /* all notes off: the track's */
++            } else if (d1 == 123u) {             /* all notes off: the track's (keeps held bend) */
+                 if (dr)
+                     release_drones();
+                 if (gl)
+@@ -5162,6 +5483,9 @@
+                         if (st.v[P_BQ_ON] != SQT_SEQ && !(barp.latch && st.v[P_BQ_ON] == SQT_ARP))
+                             arp_remove(&barp, mbass[i]);
+                     mb_n = 0;
++                    for (i = 0; i < 8u; i++)
++                        mb_exp[i] = 1.0f;
++                    bs_exp_sent = 1.0f;
+                     if (own)
+                         bass_stop();
+                 }
+@@ -5184,11 +5508,8 @@
+         } else if (kind == 0xC0u && dr) {   /* Program Change: the runner's (the FM-1's: a slot, as SCENES' MORPH and
+                                              * LOAD) */
+             eng_program(d1);
+-#if FRS_LEAD
+-        } else if (kind == 0xE0u && ld) {   /* the pitch wheel: the LEAD's, two semitones either way, as the SMK-37's own */
+-            frasil_lead_bend((float)((int32_t)(d1 | d2 << 7) - 8192) * (2.0f / 8192.0f));
+-#endif
+-        }
++        }
++        midi_in_ch = 16u;
+     }
+ }
+ 
+@@ -5711,8 +6032,9 @@
+ #define LD_KEYS 8u
+ static struct {
+     uint8_t n;                           /* the keys down, the oldest first */
+-    uint8_t k[LD_KEYS], vel[LD_KEYS];
++    uint8_t k[LD_KEYS], vel[LD_KEYS], ch[LD_KEYS];
+     int8_t note[LD_KEYS];
++    float exp[LD_KEYS];
+ } ldk;
+ 
+ static void ldk_drop(uint32_t i)
+@@ -5720,7 +6042,9 @@
+     for (; i + 1u < ldk.n; i++) {
+         ldk.k[i] = ldk.k[i + 1u];
+         ldk.vel[i] = ldk.vel[i + 1u];
++        ldk.ch[i] = ldk.ch[i + 1u];
+         ldk.note[i] = ldk.note[i + 1u];
++        ldk.exp[i] = ldk.exp[i + 1u];
+     }
+     ldk.n--;
+ }
+@@ -5746,6 +6070,20 @@
+     return 0;
+ }
+ 
++static void ldk_poly_sync(int note)
++{
++    uint32_t i;
++    float best = 0.0f;
++    if (!ldk_has(note)) {
++        frasil_lead_poly_off(note);
++        return;
++    }
++    for (i = 0; i < ldk.n; i++)
++        if (ldk.note[i] == note && ldk.exp[i] > best)
++            best = ldk.exp[i];
++    frasil_lead_exp(note, best);
++}
++
+ static void lead_key_down(uint32_t k, int note, uint32_t vel)
+ {
+     int legato, poly = st.v[P_LD_MODE] != 0;
+@@ -5757,12 +6095,14 @@
+         if (ldk.k[0] < FRS_NKEYS)
+             key[ldk.k[0]].kind = K_NONE;
+         ldk_drop(0);
+-        if (poly && !ldk_has(gone))      /* (its voice no more: let go, unless another key has its note) */
+-            frasil_lead_poly_off(gone);
++        if (poly)                        /* (its voice no more: let go, unless another key has its note) */
++            ldk_poly_sync(gone);
+     }
+     ldk.k[ldk.n] = (uint8_t)k;
+     ldk.vel[ldk.n] = (uint8_t)vel;
++    ldk.ch[ldk.n] = k >= LDK_MIDI ? midi_in_ch : 16u;
+     ldk.note[ldk.n] = (int8_t)note;
++    ldk.exp[ldk.n] = 1.0f;
+     ldk.n++;
+     if (k < FRS_NKEYS) {                 /* (a MIDI note's: no key, card #228) */
+         key[k].kind = K_LEAD;
+@@ -5791,16 +6131,18 @@
+     ldk_clean();
+     if (st.v[P_LD_MODE]) {               /* POLY: its voice let go, the others as they are (one voice a note: kept
+                                           * while another key has it, a chord's shared note) */
+-        if (!ldk_has(note))
+-            frasil_lead_poly_off(note);
++        ldk_poly_sync(note);
+         return;
+     }
+     if (!top)
+         return;
+-    if (ldk.n)
++    if (ldk.n) {
+         frasil_lead_on(ldk.note[ldk.n - 1u], (float)ldk.vel[ldk.n - 1u] * (1.0f / 127.0f), 1);
+-    else
++        if (ldk.exp[ldk.n - 1u] != 1.0f)
++            frasil_lead_exp(-1, ldk.exp[ldk.n - 1u]);
++    } else {
+         frasil_lead_off();
++    }
+ }
+ 
+ static int lead_key_top(uint32_t k) { return ldk.n && ldk.k[ldk.n - 1u] == k; }
+@@ -5819,9 +6161,9 @@
+ {
+     int8_t gone[LD_KEYS];
+     uint32_t i = 0, m = 0, j;
+-    int top = ldk.n && ldm_of(ldk.n - 1u, n);
++    int top = ldk.n && ldm_of(ldk.n - 1u, n) && (n < 0 || ldk.ch[ldk.n - 1u] == midi_in_ch);
+     while (i < ldk.n)
+-        if (ldm_of(i, n)) {
++        if (ldm_of(i, n) && (n < 0 || ldk.ch[i] == midi_in_ch)) {
+             gone[m++] = ldk.note[i];
+             ldk_drop(i);
+         } else {
+@@ -5834,17 +6176,20 @@
+         for (i = 0; i < m; i++) {
+             for (j = 0; j < i && gone[j] != gone[i]; j++)
+                 ;
+-            if (j == i && !ldk_has(gone[i]))
+-                frasil_lead_poly_off(gone[i]);
++            if (j == i)
++                ldk_poly_sync(gone[i]);
+         }
+         return;
+     }
+     if (!top)
+         return;
+-    if (ldk.n)
++    if (ldk.n) {
+         frasil_lead_on(ldk.note[ldk.n - 1u], (float)ldk.vel[ldk.n - 1u] * (1.0f / 127.0f), 1);
+-    else
++        if (ldk.exp[ldk.n - 1u] != 1.0f)
++            frasil_lead_exp(-1, ldk.exp[ldk.n - 1u]);
++    } else {
+         frasil_lead_off();
++    }
+ }
+ static void midi_lead_on(int n, uint32_t vel)
+ {
+@@ -5876,6 +6221,44 @@
+         if (ldm_of(i, n))
+             frasil_lead_pressure(ldk.note[i], f);
+ }
++static void midi_lead_exp(int n, uint32_t ch, float g)
++{
++    uint32_t i, j;
++    for (i = 0; i < ldk.n; i++)
++        if (ldm_of(i, n) && ldk.ch[i] == ch)
++            ldk.exp[i] = g;
++    if (!st.v[P_LD_MODE]) {
++        if (ldk.n && ldm_of(ldk.n - 1u, n) && ldk.ch[ldk.n - 1u] == ch)
++            frasil_lead_exp(-1, g);
++        return;
++    }
++    for (i = 0; i < ldk.n; i++)
++        if (ldm_of(i, n) && ldk.ch[i] == ch) {
++            float best = 0.0f;
++            for (j = 0; j < ldk.n; j++)
++                if (ldk.note[j] == ldk.note[i] && ldk.exp[j] > best)
++                    best = ldk.exp[j];
++            frasil_lead_exp(ldk.note[i], best);
++        }
++}
++static void midi_ld_exp_reset(uint32_t ch)
++{
++    uint32_t i, j;
++    for (i = 0; i < ldk.n; i++)
++        if (ldk.k[i] >= LDK_MIDI && ldk.ch[i] == ch && ldk.exp[i] != 1.0f) {
++            ldk.exp[i] = 1.0f;
++            if (!st.v[P_LD_MODE]) {
++                if (i + 1u == ldk.n)
++                    frasil_lead_exp(-1, 1.0f);
++            } else {
++                float best = 0.0f;
++                for (j = 0; j < ldk.n; j++)
++                    if (ldk.note[j] == ldk.note[i] && ldk.exp[j] > best)
++                        best = ldk.exp[j];
++                frasil_lead_exp(ldk.note[i], best);
++            }
++        }
++}
+ static void ldm_forget(void)             /* (the voices gone already: PANIC, the track let go) */
+ {
+     uint32_t i = 0;
+@@ -5894,6 +6277,7 @@
+         midi_lead_up(-1);
+     st.ldch = (uint8_t)ch;
+     st.ldchord = (uint8_t)(chord != 0);
++    bend_sync();
+ }
+ 
+ /* the SMK-37's wheels on the lead: mod 0 .. 127 (its VIBRATO, if more), the pitch wheel -8192 .. 8191 (two semitones
+@@ -5901,7 +6285,9 @@
+ static void eng_lead_wheels(uint32_t mod, int32_t bend)
+ {
+     frasil_lead_mod((float)mod * (1.0f / 127.0f));
+-    frasil_lead_bend((float)bend * (2.0f / 8192.0f));
++    wheel_bend = (float)bend * (2.0f / 8192.0f);
++    sent_bend[3] = wheel_bend + trk_midi_bend(st.ldch, st.v[P_KB] == 3);
++    frasil_lead_bend(sent_bend[3]);
+ }
+ #endif
+ 
+@@ -6127,6 +6513,10 @@
+                 arp_remove(&arp, n);     /* (if it was arpeggiated; latched, it stays) */
+             else if (st.v[P_SQ_TYPE] == SQT_ARP && arp.latch && key_tapped(k))
+                 arp_remove(&arp, n);     /* (STACK on: a tap on notes latched lets them go) */
++            else if (st.v[P_SQ_TYPE] == SQT_ARP && !arp_panel_held(&arp, n, k) && bit_get(mgl, n)) {
++                arp_ch_set(&arp, n, mgl_ch[n]);
++                arp_exp(&arp, n, mgl_exp[n]);
++            }
+         }
+         break;
+     case K_HOLD:
+@@ -6156,10 +6546,21 @@
+         bseq_up(key[k].root);
+         break;
+     case K_BARP:
+-        for (i = 0; i < key[k].chord.k; i++)
++        for (i = 0; i < key[k].chord.k; i++) {
++            int n = key[k].chord.n[i];
+             if ((st.v[P_BQ_ON] != SQT_SEQ && !(barp.latch && st.v[P_BQ_ON] == SQT_ARP)) ||
+-                (st.v[P_BQ_ON] == SQT_ARP && barp.latch && key_tapped(k)))
+-                arp_remove(&barp, key[k].chord.n[i]);   /* (latched, it stays; a tap on it, STACK on: it goes) */
++                (st.v[P_BQ_ON] == SQT_ARP && barp.latch && key_tapped(k))) {
++                arp_remove(&barp, n);    /* (latched, it stays; a tap on it, STACK on: it goes) */
++            } else if (st.v[P_BQ_ON] == SQT_ARP && !arp_panel_held(&barp, n, k)) {
++                uint32_t j;
++                for (j = mb_n; j > 0u; j--)
++                    if (mbass[j - 1u] == n) {
++                        arp_ch_set(&barp, n, mb_ch[j - 1u]);
++                        arp_exp(&barp, n, mb_exp[j - 1u]);
++                        break;
++                    }
++            }
++        }
+         break;
+     case K_LATCH:
+         if (key[k].prs)
+@@ -6709,8 +7110,40 @@
+ /* ------------------------------------------------------------- driving it --- */
+ /* the engine started at the rate fs (Hz): its sound, the drone's presets; no MIDI clock yet (else the first half
+  * second would follow one: the grid still, a scene loaded then not from its top) */
++static void exp_reset_all(void)
++{
++    uint32_t i;
++    memset(mid_ch, 0, sizeof mid_ch);
++    memset(mgl_ch, 0, sizeof mgl_ch);
++    memset(mb_ch, 0, sizeof mb_ch);
++    last_bend_ch = 0;
++    midi_in_ch = 16u;
++    for (i = 0; i < 128u; i++)
++        mid_exp[i] = dr_exp_sent[i] = mgl_exp[i] = 1.0f;
++    for (i = 0; i < 8u; i++)
++        mb_exp[i] = 1.0f;
++    bs_exp_sent = 1.0f;
++    for (i = 0; i < 16u; i++) {
++        midi_bend[i] = 0.0f;
++        arp.exp[i] = arp.pexp[i] = barp.exp[i] = barp.pexp[i] = 1.0f;
++#if FRS_MIDI_OUT
++        marp.exp[i] = marp.pexp[i] = 1.0f;
++#endif
++    }
++    for (i = 0; i < 4u; i++)
++        sent_bend[i] = 0.0f;
++#if FRS_LEAD
++    wheel_bend = 0.0f;
++    for (i = 0; i < LD_KEYS; i++) {
++        ldk.ch[i] = 0;
++        ldk.exp[i] = 1.0f;
++    }
++#endif
++}
++
+ static void eng_init(float fs)
+ {
++    exp_reset_all();
+     grid.clk_at = eng_ms() - 60000u;
+     tape_at = eng_ms();
+     frasil_init(fs);
+@@ -6826,6 +7259,7 @@
+     memset(mod_ld, 0, sizeof mod_ld);
+ #endif
+     morph_at = swell_at = 0;
++    exp_reset_all();
+ }
+ 
+ /* the state as at power-on: nothing latched, held or to undo, every setting at its default, the arpeggio latched and
+@@ -6834,6 +7268,7 @@
+ {
+     uint32_t i;
+     count_stop();
++    exp_reset_all();
+ #if FRS_LEAD
+     midi_lead_up(-1);                    /* (LEAD CH as at first, OFF, card #228: what MIDI held on it let go) */
+     st.ldch = LD_CH_DEF;
+--- a/engine/dsp/bass.c
++++ b/engine/dsp/bass.c
+@@ -41,6 +41,8 @@
+     uint32_t ph, ph2, phs;               /* the phases: the note, REESE's second saw, SUB's octave below */
+     float env, lvl;                      /* the envelope 0..1 (the gain its square), the gain at the last chunk's end */
+     float prs, prs_t;
++    float exp, exp_t;                    /* MIDI polyphonic expression gain, 0..1 (1 unity, 0 silent) */
++    float bend, bend_t;                  /* MIDI pitch bend, semitones */
+     float s1, s2;                        /* the low-pass's two states */
+     float flt, res, drv;                 /* FILTER, RESONANCE and DRIVE as they glide (~7 ms: an LFO's steps smoothed) */
+     float wgt, pch, bit;                 /* WEIGHT, PUNCH and BITE as they glide */
+@@ -51,7 +53,7 @@
+ #if PULSE_RISE
+     uint8_t rise;                        /* PULSE's strike coming in: its chunk, 1 .. PULSE_RISE (0: none) */
+ #endif
+-} b = {.note = -1, .mg = 1.0f};
++} b = {.note = -1, .mg = 1.0f, .exp = 1.0f, .exp_t = 1.0f};
+ 
+ /* each model's level, so that they sound about as loud as the sine through FILTER's default */
+ static const float MODEL_G[BASS_NMODEL] = {1.0f, 1.1f, 0.62f, 1.0f, 1.6f, 1.0f, 1.1f, 1.15f};
+@@ -60,6 +62,7 @@
+ {
+     b.note = -1;
+     b.again = 0;
++    b.exp = b.exp_t = 1.0f;
+ }
+ 
+ #if !BR_FS_CONST                         /* (frasil_reset's: not on the FM-1) */
+@@ -78,6 +81,8 @@
+     b.vel = b.vel_t = b.oct = b.oct_t = 0.0f;
+     b.ph = b.ph2 = b.phs = b.phw = 0;
+     b.env = b.lvl = b.prs = b.prs_t = b.s1 = b.s2 = b.flt = b.res = b.drv = 0.0f;
++    b.exp = b.exp_t = 1.0f;
++    b.bend = b.bend_t = 0.0f;
+     b.wgt = b.pch = b.bit = b.pe = b.hl = b.hz = 0.0f;
+ }
+ #endif
+@@ -91,6 +96,8 @@
+     uint8_t st = (uint8_t)(b.set | b.rise << 1);   /* PULSE's strike coming in, above set's bit: STATE as long as 3.2's
+                                                     * (a 3.2 FM-1's read here: none coming in; 3.2's engine reads set) */
+ #endif
++    if (!c->save)
++        b.exp = b.exp_t = 1.0f;
+     c->u8(c, &x);
+     b.note = (int8_t)x;
+     if (b.note < 0)
+@@ -155,10 +162,12 @@
+         b.ph = b.ph2 = b.phs = b.phw = 0;
+         b.env = b.lvl = 0.0f;
+         b.prs = b.prs_t = 0.0f;
++        b.exp = 1.0f;
+         b.set = 0;
+         b.s1 = b.s2 = b.hl = b.hz = 0.0f;
+         b.vel = vel;
+     }
++    b.exp_t = 1.0f;
+     b.oct_t = o;
+     b.note = (int8_t)note;
+     b.octv = (int8_t)p->octave;
+@@ -213,6 +222,13 @@
+ }
+ 
+ void bass_press(float p) { b.prs_t = br_clampf(p, 0.0f, 1.0f); }
++void bass_exp(float g)
++{
++    b.exp_t = br_clampf(g, 0.0f, 1.0f);
++    if (b.note < 0 || (b.env == 0.0f && b.lvl == 0.0f))
++        b.exp = b.exp_t;
++}
++void bass_bend(float semis) { b.bend_t = br_clampf(semis, -12.0f, 12.0f); }
+ 
+ /* sin(2 pi ph / 2^32) */
+ static inline float psin(uint32_t ph)
+@@ -291,6 +307,10 @@
+     float kg, ka, la, kd, kr, sus, drv, norm, mix, k, trim, kp, kf, mgs, kpe, c1, c2;
+     const float ch_t = (float)CH * BR_INV_FS * br_tk;   /* a chunk's time (TAPE SPEED's) */
+     uint32_t c, i;
++    if (b.bend != 0.0f || b.bend_t != 0.0f) {
++        float db = b.bend_t - b.bend;
++        b.bend = db > -1e-5f && db < 1e-5f ? b.bend_t : b.bend + db * br_k(0.45f);
++    }
+     if (b.note < 0)
+         return;
+     /* a chunk's steps: the glide (a third of GLIDE a time constant), the envelope's */
+@@ -401,7 +421,7 @@
+         mix = b.drv;
+         k = 2.0f - 1.83f * br_clampf(b.res, 0.0f, 1.0f);   /* 1 / Q: 0.5 .. 6 */
+         trim = 1.0f / (1.0f + 0.6f * br_clampf(b.res, 0.0f, 1.0f));   /* its peak, kept under the limit */
+-        f = 440.0f * fm_exp2f(b.oct) * br_pk;   /* (TAPE SPEED on it, and on its filter) */
++        f = 440.0f * fm_exp2f(b.bend != 0.0f ? b.oct + b.bend * (1.0f / 12.0f) : b.oct) * br_pk;   /* (TAPE SPEED on it, and on its filter) */
+         inc = br_clampf(f * BR_INV_FS, 0.0f, 0.45f);
+         d = (uint32_t)(int32_t)(inc * 4294967296.0f);
+         /* the low-pass: 40 Hz .. 5 kHz, opened up to two octaves by pressure */
+@@ -412,6 +432,12 @@
+         a3 = g * a2;
+         g1 = BASS_G * MODEL_G[b.model] * p->level * p->level * (0.6f + 0.4f * b.vel) * (1.0f + 0.6f * b.prs) *
+              b.env * b.env * b.mg * b.mg * (3.0f - 2.0f * b.mg) * (1.0f + 0.9f * b.pch * b.pe) * (1.0f + 0.55f * b.wgt);
++        if (b.exp != 1.0f || b.exp_t != 1.0f) {
++            float de = b.exp_t - b.exp;
++            b.exp = de > -1e-5f && de < 1e-5f ? b.exp_t : b.exp + de * br_k(0.2f);
++            if (b.exp != 1.0f)
++                g1 *= b.exp;
++        }
+         dg = (g1 - g0) * (1.0f / (float)CH);
+         wave(b.model, s, d);
+         body = b.wgt > 0.001f || b.bit > 0.001f;
+--- a/engine/dsp/bass.h
++++ b/engine/dsp/bass.h
+@@ -42,6 +42,8 @@
+                                                                * where it is if it sounds */
+ void bass_off(void);
+ void bass_press(float p);                /* 0..1: louder, and its filter opens */
++void bass_exp(float g);                  /* 0..1: MIDI polyphonic expression gain (1 unity, 0 silent) */
++void bass_bend(float semis);             /* MIDI pitch bend, semitones */
+ void bass_pulse(float gap);              /* the note sounding let go for gap seconds, then again from its ATTACK (the
+                                           * same note and velocity, its pressure kept) */
+ void bass_retune(int note, float vel);   /* the note sounding (or in PULSE's gap) to this one, gliding as GLIDE does,
+--- a/engine/dsp/frasil.c
++++ b/engine/dsp/frasil.c
+@@ -36,10 +36,10 @@
+ 
+ /* ---------------------------------------------------------------- events --- */
+ enum { EV_ON = 1, EV_OFF, EV_ALLOFF, EV_PRS, EV_SPON, EV_SPOFF, EV_SPPRS, EV_BON, EV_BOFF, EV_BPRS, EV_BPUL, EV_CLICK,
+-       EV_BRET
++       EV_BRET, EV_EXP, EV_BEND, EV_SPEXP, EV_SPBEND, EV_BEXP, EV_BBEND
+ #if FRS_LEAD
+        , EV_LON, EV_LLEG, EV_LOFF, EV_LPRS, EV_LMOD, EV_LBEND,  /* LEAD (card #144): struck, legato, let go, pressed, the wheels; */
+-       EV_LPON, EV_LPOFF                                    /* POLY's: a voice struck, let go */
++       EV_LPON, EV_LPOFF, EV_LEXP                               /* POLY's: a voice struck, let go; polyphonic expression */
+ #endif
+  };
+ typedef struct {
+@@ -75,12 +75,18 @@
+ void frasil_note_off(int note) { ev_push(EV_OFF, note, 0.0f); }
+ void frasil_all_off(void) { ev_push(EV_ALLOFF, 0, 0.0f); }
+ void frasil_pressure(int note, float p) { ev_push(EV_PRS, note, p); }
++void frasil_note_exp(int note, float g) { ev_push(EV_EXP, note, g); }
++void frasil_bend(float semis) { ev_push(EV_BEND, 0, semis); }
+ void frasil_glint_on(int note, float vel) { ev_push(EV_SPON, note, vel); }
+ void frasil_glint_off(int note) { ev_push(EV_SPOFF, note, 0.0f); }
+ void frasil_glint_pressure(int note, float p) { ev_push(EV_SPPRS, note, p); }
++void frasil_glint_exp(int note, float g) { ev_push(EV_SPEXP, note, g); }
++void frasil_glint_bend(float semis) { ev_push(EV_SPBEND, 0, semis); }
+ void frasil_bass_on(int note, float vel) { ev_push(EV_BON, note, vel); }
+ void frasil_bass_off(void) { ev_push(EV_BOFF, 0, 0.0f); }
+ void frasil_bass_pressure(float p) { ev_push(EV_BPRS, 0, p); }
++void frasil_bass_exp(float g) { ev_push(EV_BEXP, 0, g); }
++void frasil_bass_bend(float semis) { ev_push(EV_BBEND, 0, semis); }
+ void frasil_bass_pulse(float gap) { ev_push(EV_BPUL, 0, gap); }
+ void frasil_bass_retune(int note, float vel) { ev_push(EV_BRET, note, vel); }
+ void frasil_click(int accent) { ev_push(EV_CLICK, 0, accent ? 1.0f : 0.0f); }
+@@ -90,6 +96,7 @@
+ void frasil_lead_poly_on(int note, float vel) { ev_push(EV_LPON, note, vel); }
+ void frasil_lead_poly_off(int note) { ev_push(EV_LPOFF, note, 0.0f); }
+ void frasil_lead_pressure(int note, float p) { ev_push(EV_LPRS, note, p); }
++void frasil_lead_exp(int note, float g) { ev_push(EV_LEXP, note, g); }
+ void frasil_lead_mod(float m) { ev_push(EV_LMOD, 0, m); }
+ void frasil_lead_bend(float semis) { ev_push(EV_LBEND, 0, semis); }
+ #endif
+@@ -102,6 +109,7 @@
+     uint8_t wait;                        /* chunks before it sounds: room being made for it (make_room) */
+     uint32_t age;                        /* note-on order (stealing) */
+     float vel, prs, prs_t;
++    float exp, exp_t;                    /* MIDI polyphonic expression gain, 0..1 (1 unity, 0 silent) */
+     float env;                           /* 0..1; the amplitude is its square */
+     float lvl;                           /* the gain at the end of the last chunk (the next ramps from it) */
+     float pan;                           /* -1..1 */
+@@ -134,6 +142,7 @@
+ } voice_t;
+ 
+ static voice_t vo[NV];
++static float dr_bend, dr_bend_t;
+ static uint32_t ages;
+ static uint32_t rng = 0x2545F491u;
+ 
+@@ -218,12 +227,17 @@
+     v->shed = 0;
+     v->vel = vel;
+     v->age = ++ages;
+-    if (!fresh)
++    v->exp_t = 1.0f;
++    if (!fresh) {
++        if (v->env == 0.0f && v->lvl == 0.0f)
++            v->exp = 1.0f;
+         return;
++    }
+     v->env = 0.0f;
+     v->lvl = 0.0f;
+     v->wait = 0;
+     v->prs = v->prs_t = 0.0f;
++    v->exp = 1.0f;
+     /* a place in the field from the note, so a chord opens out (the drift moves it) */
+     v->pan = (float)(((note * 7) % 12) - 6) * (1.0f / 6.0f);
+     for (k = 0; k < 3; k++) {
+@@ -352,6 +366,12 @@
+             break;
+         case EV_SPPRS:
+             glint_press(e.note, e.v);
++            break;
++        case EV_SPEXP:
++            glint_exp(e.note, e.v);
++            break;
++        case EV_SPBEND:
++            glint_bend(e.v);
+             break;
+         case EV_BON:
+             bass_on(e.note, e.v, &T.bass);
+@@ -362,6 +382,12 @@
+         case EV_BPRS:
+             bass_press(e.v);
+             break;
++        case EV_BEXP:
++            bass_exp(e.v);
++            break;
++        case EV_BBEND:
++            bass_bend(e.v);
++            break;
+         case EV_BPUL:
+             bass_pulse(e.v);
+             break;
+@@ -385,6 +411,9 @@
+         case EV_LPRS:
+             lead_press(e.note, e.v);
+             break;
++        case EV_LEXP:
++            lead_exp(e.note, e.v);
++            break;
+         case EV_LMOD:
+             lead_mod(e.v);
+             break;
+@@ -401,7 +430,18 @@
+             for (i = 0; i < NV; i++)
+                 if (vo[i].note >= 0 && (e.note < 0 ? vo[i].gate : vo[i].note == e.note))
+                     vo[i].prs_t = br_clampf(e.v, 0.0f, 1.0f);
++            break;
++        case EV_EXP:
++            for (i = 0; i < NV; i++)
++                if (vo[i].note >= 0 && (e.note < 0 ? vo[i].gate : vo[i].note == e.note)) {
++                    vo[i].exp_t = br_clampf(e.v, 0.0f, 1.0f);
++                    if (vo[i].env == 0.0f && vo[i].lvl == 0.0f)
++                        vo[i].exp = vo[i].exp_t;
++                }
+             break;
++        case EV_BEND:
++            dr_bend_t = br_clampf(e.v, -12.0f, 12.0f);
++            break;
+         }
+     }
+ }
+@@ -458,6 +498,8 @@
+ {
+     float f = 440.0f * fm_exp2f(((float)v->note - 69.0f + P.tune) * (1.0f / 12.0f)) * br_pk;   /* (TAPE SPEED on it) */
+     float m = P.motion, prs = br_clampf(v->prs + swell, 0.0f, 1.0f) * P.pressure;
++    if (dr_bend != 0.0f)
++        f *= fm_exp2f(dr_bend * (1.0f / 12.0f));
+     float mw = m * (1.0f + 2.0f * m);  /* MOTION's wander: as before low down, twice as wide half-way, three times at the
+                                         * top (a choir's ±21 cents, its filter opening and closing: heard) */
+     float bright = (P.timbre - 0.5f) + tide_v * P.tide * 0.5f;
+@@ -1141,6 +1183,10 @@
+     br_pk = P.tape_l2 == 0.0f ? 1.0f : fm_exp2f(P.tape_l2);   /* TAPE SPEED this block (X1.00: 1 exactly) */
+     br_tk = P.time_l2 == 0.0f ? 1.0f : fm_exp2f(P.time_l2);
+     events();
++    if (dr_bend != 0.0f || dr_bend_t != 0.0f) {
++        float db = dr_bend_t - dr_bend;
++        dr_bend = db > -1e-5f && db < 1e-5f ? dr_bend_t : dr_bend + db * br_k(0.45f);
++    }
+     drift(n);
+     breath_noise(n);
+     if (P.a4_l2 != 0.0f)                 /* TUNE A4 on the voices' pitch with TAPE SPEED (440 Hz: as it was, exactly) */
+@@ -1201,6 +1247,12 @@
+             lvl = (1.0f - P.velocity + P.velocity * v->vel) * (1.0f + 1.2f * P.pressure * br_clampf(v->prs + swell, 0.0f, 1.0f)) * VOICE_G;
+             g1 = !v->gate && v->env < TAIL_END ? 0.0f : lvl * v->env * v->env;   /* (its tail's end: down to nothing
+                                                                                  * over this chunk, then free) */
++            if (v->exp != 1.0f || v->exp_t != 1.0f) {
++                float de = v->exp_t - v->exp;
++                v->exp = de > -1e-5f && de < 1e-5f ? v->exp_t : v->exp + de * sk;
++                if (v->exp != 1.0f)
++                    g1 *= v->exp;
++            }
+             v->lvl = g1;
+             dg = (g1 - g0) * (1.0f / (float)CH);
+             for (i = 0; i < CH; i++)
+@@ -2333,6 +2385,12 @@
+             break;
+         case EV_BPRS:
+             bass_press(e.v);
++            break;
++        case EV_BEXP:
++            bass_exp(e.v);
++            break;
++        case EV_BBEND:
++            bass_bend(e.v);
+             break;
+         case EV_BRET:
+             bass_retune(e.note, e.v);
+@@ -2342,6 +2400,17 @@
+                 if (vo[i].note >= 0 && (e.note < 0 ? vo[i].gate : vo[i].note == e.note))
+                     vo[i].prs_t = br_clampf(e.v, 0.0f, 1.0f);
+             break;
++        case EV_EXP:
++            for (i = 0; i < NV; i++)
++                if (vo[i].note >= 0 && (e.note < 0 ? vo[i].gate : vo[i].note == e.note)) {
++                    vo[i].exp_t = br_clampf(e.v, 0.0f, 1.0f);
++                    if (vo[i].env == 0.0f && vo[i].lvl == 0.0f)
++                        vo[i].exp = vo[i].exp_t;
++                }
++            break;
++        case EV_BEND:
++            dr_bend_t = br_clampf(e.v, -12.0f, 12.0f);
++            break;
+         case EV_SPON:
+             glint_skip_on(e.note, e.v, &T.glint);
+             break;
+@@ -2351,6 +2420,20 @@
+         case EV_SPPRS:
+             glint_skip_press(e.note, e.v, &T.glint);
+             break;
++        case EV_SPEXP:
++            glint_skip_exp(e.note, e.v, &T.glint);
++            break;
++        case EV_SPBEND:
++            glint_bend(e.v);
++            break;
++#if FRS_LEAD
++        case EV_LEXP:
++            lead_exp(e.note, e.v);
++            break;
++        case EV_LBEND:
++            lead_bend(e.v);
++            break;
++#endif
+         default:
+             break;
+         }
+@@ -2378,6 +2461,7 @@
+ static void voice_lv_rest(voice_t *v, uint32_t slot)
+ {
+     uint32_t k;
++    v->exp = v->exp_t = 1.0f;
+     v->pan = (float)(((v->note * 7) % 12) - 6) * (1.0f / 6.0f);
+     for (k = 0; k < 3u; k++)
+         v->cw[k] = 0.5f;
+@@ -3318,8 +3402,10 @@
+ #else
+     (void)fs;
+ #endif
+-    for (i = 0; i < NV; i++)
++    for (i = 0; i < NV; i++) {
+         vo[i].note = -1;
++        vo[i].exp = vo[i].exp_t = 1.0f;
++    }
+     for (i = 0; i < 3; i++)
+         for (j = 0; j < NR; j++)
+             RATIO_L2[i][j] = fm_log2f(RATIOS[i][j]);
+@@ -3351,6 +3437,9 @@
+     cin_clear = 0;
+ #endif
+     fr_zero(vo, sizeof vo);
++    for (i = 0; i < NV; i++)
++        vo[i].exp = vo[i].exp_t = 1.0f;
++    dr_bend = dr_bend_t = 0.0f;
+     fr_zero(&P, sizeof P);
+     T = pend = P;
+     br_pk = br_tk = 1.0f;
+@@ -3467,6 +3556,7 @@
+     for (i = 0; i < NV; i++) {
+         vo[i].note = -1;
+         vo[i].env = vo[i].lvl = 0.0f;
++        vo[i].exp = vo[i].exp_t = 1.0f;
+     }
+     bass_init();
+ #if FRS_LEAD
+--- a/engine/dsp/frasil.h
++++ b/engine/dsp/frasil.h
+@@ -148,16 +148,22 @@
+ void frasil_note_off(int note);
+ void frasil_all_off(void);
+ void frasil_pressure(int note, float p);         /* 0..1; note -1: every voice (channel pressure) */
++void frasil_note_exp(int note, float g);         /* 0..1: MIDI polyphonic expression gain (1 unity, 0 silent) */
++void frasil_bend(float semis);                   /* MIDI pitch bend on the drones, semitones */
+ void frasil_swell(float s);
+ /* GLINT, the icy glints over the drones (glint.h): never latched */
+ void frasil_glint_on(int note, float vel);
+ void frasil_glint_off(int note);                 /* note -1: every glint */
+ void frasil_click(int accent);                   /* main loop: the metronome's tick (accent: the bar's first) */
+ void frasil_glint_pressure(int note, float p);
++void frasil_glint_exp(int note, float g);
++void frasil_glint_bend(float semis);
+ /* BASS, one deep note under the drones (bass.h): held until let go; a new note glides from the last */
+ void frasil_bass_on(int note, float vel);
+ void frasil_bass_off(void);
+ void frasil_bass_pressure(float p);
++void frasil_bass_exp(float g);
++void frasil_bass_bend(float semis);
+ void frasil_bass_pulse(float gap);       /* PULSE: the note let go for gap seconds, then again from its ATTACK */
+ void frasil_bass_retune(int note, float vel);   /* the note sounding to this one, not struck (PULSE strikes it) */
+ #if FRS_LEAD
+@@ -168,6 +174,7 @@
+ void frasil_lead_poly_on(int note, float vel);   /* POLY's: a voice struck on the note, let go */
+ void frasil_lead_poly_off(int note);
+ void frasil_lead_pressure(int note, float p);   /* note -1: MONO's voice */
++void frasil_lead_exp(int note, float g);        /* note -1: MONO's voice */
+ void frasil_lead_mod(float m);            /* the mod wheel, 0..1 */
+ void frasil_lead_bend(float semis);       /* the pitch wheel, semitones */
+ void frasil_lead_view(lead_view_t *v);
+--- a/engine/dsp/glint.c
++++ b/engine/dsp/glint.c
+@@ -43,6 +43,7 @@
+     float idx, idx_end, ki;              /* the index (in phase units), where it settles, its decay a sample */
+     float gl, gr;
+     float prs, pg;                       /* pressure 0..1, and the gain it gives now (gliding to 1 + 1.5 prs) */
++    float exp, exp_t;                    /* MIDI polyphonic expression gain, 0..1 (1 unity, 0 silent) */
+     float pf, pa;                        /* the pressure smoothed (~15 ms), and its slow average (~200 ms): VIBRATO bends
+                                           * the pitch by their difference, the finger's wiggle */
+     float cents;                         /* the bend now (the screen) */
+@@ -55,6 +56,7 @@
+ } glint_t;
+ 
+ static glint_t sp[GLINT_NV];
++static float gl_bend, gl_bend_t;
+ static int sounding;                     /* a glint sounded in the last glint_render (glint_delay: else its input is 0) */
+ static uint32_t sp_age, sp_rng = 0x6C8E9CF5u;
+ 
+@@ -87,8 +89,10 @@
+ #endif
+     for (i = 0; i <= TN; i++)
+         sintab[i] = fm_sinf(6.2831853f * (float)i / (float)TN);
+-    for (i = 0; i < GLINT_NV; i++)
++    for (i = 0; i < GLINT_NV; i++) {
+         sp[i].note = -1;
++        sp[i].exp = sp[i].exp_t = 1.0f;
++    }
+ }
+ 
+ static float decay_k(float seconds) { return fm_exp2f(-9.965784f / (seconds * BR_FS)); }   /* -60 dB over it */
+@@ -155,6 +159,7 @@
+     s->gr = fm_sqrtf(0.5f * (1.0f + pan));
+     s->prs = 0.0f;
+     s->pg = 1.0f;
++    s->exp = s->exp_t = 1.0f;
+     s->pf = s->pa = 0.0f;
+     s->cents = 0.0f;
+     s->landed = s->calm = 0;
+@@ -170,6 +175,9 @@
+     uint32_t i;
+     for (i = 0; i < sizeof sp; i++)
+         z[i] = 0;
++    for (i = 0; i < GLINT_NV; i++)
++        sp[i].exp = sp[i].exp_t = 1.0f;
++    gl_bend = gl_bend_t = 0.0f;
+     sp_age = 0;
+     sp_rng = 0x6C8E9CF5u;
+     sounding = 0;
+@@ -188,6 +196,7 @@
+         sp[i].note = -1;
+         sp[i].gate = 0;
+         sp[i].amp = 0.0f;
++        sp[i].exp = sp[i].exp_t = 1.0f;
+     }
+     delay_clear();
+ }
+@@ -224,6 +233,20 @@
+             }
+         }
+ }
++
++void glint_exp(int note, float g)
++{
++    uint32_t i;
++    g = br_clampf(g, 0.0f, 1.0f);
++    for (i = 0; i < GLINT_NV; i++)
++        if (sp[i].gate && (note < 0 || sp[i].note == note)) {
++            sp[i].exp_t = g;
++            if (!sp[i].blocks && sp[i].att == 0.0f)
++                sp[i].exp = g;
++        }
++}
++
++void glint_bend(float semis) { gl_bend_t = br_clampf(semis, -12.0f, 12.0f); }
+ 
+ void glint_render(float *l, float *r, float *send_l, float *send_r, uint32_t n, const glint_params_t *p)
+ {
+@@ -235,6 +258,10 @@
+     float lv0 = lv_was < 0.0f ? lv : lv_was;   /* (from there to lv in each glint's pressure ramp: no more a sample) */
+     lv_was = lv;
+ #endif
++    if (gl_bend != 0.0f || gl_bend_t != 0.0f) {
++        float db = gl_bend_t - gl_bend;
++        gl_bend = db > -1e-5f && db < 1e-5f ? gl_bend_t : gl_bend + db * br_k(0.45f);
++    }
+     sounding = 0;
+     for (j = 0; j < GLINT_NV; j++) {
+         glint_t *s = &sp[j];
+@@ -259,6 +286,13 @@
+         dpg = (1.0f + 1.5f * s->prs - pg) * (1.0f / (float)n);
+ #endif
+         s->pg = 1.0f + 1.5f * s->prs;
++        if (s->exp != 1.0f || s->exp_t != 1.0f) {
++            float e0 = s->exp, de = s->exp_t - e0;
++            float e1 = de > -1e-5f && de < 1e-5f ? s->exp_t : e0 + de * br_k(0.6f);
++            s->exp = e1;
++            dpg = ((pg + dpg * (float)n) * e1 - pg * e0) * (1.0f / (float)n);
++            pg *= e0;
++        }
+         dc = s->dc;
+         pc = s->pc;
+         pm = s->pm;
+@@ -283,9 +317,9 @@
+         }
+         if (p->vibrato > 0.001f)         /* VIBRATO: the finger's */
+             s->cents += p->vibrato * 25.0f * br_clampf((s->pf - s->pa) * 4.0f, -1.0f, 1.0f);
+-        if (p->vibrato > 0.001f || p->vib_auto > 0.0f || br_pk != 1.0f) {   /* both operators bent together, a block at
+-                                                                             * a time (TAPE SPEED with them) */
+-            float bend = fm_exp2f(s->cents * (1.0f / 1200.0f)) * br_pk;
++        if (p->vibrato > 0.001f || p->vib_auto > 0.0f || br_pk != 1.0f || gl_bend != 0.0f) {
++            float cents = gl_bend != 0.0f ? s->cents + gl_bend * 100.0f : s->cents;
++            float bend = fm_exp2f(cents * (1.0f / 1200.0f)) * br_pk;
+             dc = bent(dc, bend);
+             dm = bent(dm, bend);
+         }
+@@ -410,6 +444,12 @@
+     glint_press(note, prs);
+ }
+ 
++void glint_skip_exp(int note, float g, const glint_params_t *p)
++{
++    skip_settle(p);
++    glint_exp(note, g);
++}
++
+ void glint_skip_ms(uint32_t ms) { sk_now += ms; }
+ 
+ void glint_skip_done(const glint_params_t *p)
+--- a/engine/dsp/glint.h
++++ b/engine/dsp/glint.h
+@@ -44,11 +44,14 @@
+ void glint_on(int note, float vel, const glint_params_t *p);      /* render side */
+ void glint_off(int note, const glint_params_t *p);
+ void glint_press(int note, float p);
++void glint_exp(int note, float g);       /* 0..1: MIDI polyphonic expression gain (1 unity, 0 silent) */
++void glint_bend(float semis);            /* MIDI pitch bend, semitones */
+ #ifndef __PI32V2__
+ /* a skip's (frasil_skip): ms passing with no render, the strikes and the keys let go in it, then its end */
+ void glint_skip_on(int note, float vel, const glint_params_t *p);
+ void glint_skip_off(int note, const glint_params_t *p);
+ void glint_skip_press(int note, float prs, const glint_params_t *p);
++void glint_skip_exp(int note, float g, const glint_params_t *p);
+ void glint_skip_ms(uint32_t ms);
+ void glint_skip_done(const glint_params_t *p);
+ #endif
+--- a/engine/dsp/lead.c
++++ b/engine/dsp/lead.c
+@@ -66,9 +66,10 @@
+     uint8_t swap;                        /* taken while it sounded: the chunks left of its way out, its note after */
+     float oct, oct_t;                    /* the pitch now and where it glides, octaves above 440 Hz */
+     float vel, vel_t, prs, prs_t;
++    float exp, exp_t;                    /* MIDI polyphonic expression gain, 0..1 (1 unity, 0 silent) */
+     float env, lvl;                      /* the envelope 0..1, the gain at the last chunk's end */
+     float fenv;                          /* FILTER ENV's own envelope, 0..1 (admin #619: struck, let go with env) */
+-    float sw_vel;                        /* (swap's note's velocity) */
++    float sw_vel, sw_exp;                /* (swap's note's velocity and expression gain) */
+     uint32_t ph1, ph2;
+     uint32_t age;                        /* when it was struck (POLY takes the oldest held) */
+     float s1, s2, s3, s4;                /* the two filter stages' states */
+@@ -164,8 +165,10 @@
+                                                           * 7 kHz, what folds back under 4 kHz; Butterworth's 22) */
+     bq_ell(&d.aa[1], 2.218985f, 1.0308677f, 3.3830906f);
+     bq_ell(&d.up, 2.646702f, 0.939085f, 1.257641f);   /* (two poles, 2 dB, its notch some 9 kHz) */
+-    for (i = 0; i < LEAD_NV; i++)
++    for (i = 0; i < LEAD_NV; i++) {
+         vs[i].note = -1;
++        vs[i].exp = vs[i].exp_t = vs[i].sw_exp = 1.0f;
++    }
+ }
+ 
+ #if !BR_FS_CONST                         /* (frasil_reset's: not on the FM-1) */
+@@ -178,7 +181,10 @@
+ }
+ void lead_reset(void)                    /* (as the statics start: lead_init's after it) */
+ {
++    uint32_t i;
+     ld_zero(vs, sizeof vs);
++    for (i = 0; i < LEAD_NV; i++)
++        vs[i].exp = vs[i].exp_t = vs[i].sw_exp = 1.0f;
+     ld_zero(&L, sizeof L);
+     L.cap = LEAD_NV;
+     L.rng = 0x6C8E9CF5u;
+@@ -197,6 +203,7 @@
+         vs[i].note = -1;
+         vs[i].gate = vs[i].cut = vs[i].swap = 0;
+         vs[i].env = vs[i].lvl = vs[i].fenv = 0.0f;
++        vs[i].exp = vs[i].exp_t = vs[i].sw_exp = 1.0f;
+     }
+     d.live = 0;
+     d.dirty = 1;                         /* (its echoes gone: cleared before it runs again) */
+@@ -217,6 +224,7 @@
+     v->s1 = v->s2 = v->s3 = v->s4 = v->n1 = v->n2 = 0.0f;
+     v->vel = vel;
+     v->prs = v->prs_t = 0.0f;
++    v->exp = v->exp_t = 1.0f;
+     v->set = 0;
+ }
+ 
+@@ -224,6 +232,7 @@
+ {
+     v->note = (int8_t)note;
+     v->vel_t = vel;
++    v->exp_t = 1.0f;
+     v->gate = 1;
+     v->dec = v->fdec = v->cut = 0;
+     v->ever = 1;
+@@ -247,6 +256,7 @@
+     v->note = (int8_t)note;
+     v->vel_t = vel;
+     if (legato && v->gate) {             /* legato: the envelope goes on, the note glides */
++        v->exp_t = 1.0f;
+         L.glides++;
+         return;
+     }
+@@ -290,6 +300,7 @@
+         x->note = (int8_t)note;          /* sounding: out first (LD_SWAP), its note struck after (the render's); one
+                                           * the shedding let go too (on its way out in 15 ms, loud still) */
+         x->sw_vel = vel;
++        x->sw_exp = 1.0f;
+         if (!x->swap)
+             x->swap = (uint8_t)LD_SWAP;
+         x->gate = 1;
+@@ -327,6 +338,27 @@
+             if (vs[i].note == note && vs[i].gate)
+                 vs[i].prs_t = p;
+ }
++void lead_exp(int note, float g)
++{
++    uint32_t i;
++    g = br_clampf(g, 0.0f, 1.0f);
++    if (note < 0) {
++        vs[0].exp_t = g;
++        if (vs[0].note < 0 || (vs[0].env == 0.0f && vs[0].lvl == 0.0f))
++            vs[0].exp = g;
++    } else {
++        for (i = 0; i < LEAD_NV; i++)
++            if (vs[i].note == note && vs[i].gate) {
++                if (vs[i].swap) {
++                    vs[i].sw_exp = g;
++                } else {
++                    vs[i].exp_t = g;
++                    if (vs[i].env == 0.0f && vs[i].lvl == 0.0f)
++                        vs[i].exp = g;
++                }
++            }
++    }
++}
+ void lead_mod(float m) { L.mod = br_clampf(m, 0.0f, 1.0f); }
+ void lead_bend(float semis) { L.bend_t = br_clampf(semis, -12.0f, 12.0f); }
+ 
+@@ -488,6 +520,10 @@
+         on--;
+     }
+     L.send = L.echo[0] = L.echo[1] = 0.0f;
++    if (!any && (L.bend != 0.0f || L.bend_t != 0.0f)) {
++        float db = L.bend_t - L.bend;
++        L.bend = db > -1e-5f && db < 1e-5f ? L.bend_t : L.bend + db * br_k(0.45f);
++    }
+     if (!any && !d.live)
+         return 0;
+     if (d.dirty && any) {                /* (from silence: no old echoes) */
+@@ -585,6 +621,8 @@
+         if (any) {
+             float vib;
+             L.bend += (L.bend_t - L.bend) * kb;
++            if (L.bend != L.bend_t && L.bend - L.bend_t > -1e-5f && L.bend - L.bend_t < 1e-5f)
++                L.bend = L.bend_t;
+             L.vph += 5.5f * ch_t;
+             L.vph -= L.vph >= 1.0f ? 1.0f : 0.0f;
+             vib = 0.5f * (p->vibrato > L.mod ? p->vibrato : L.mod);
+@@ -641,6 +679,12 @@
+             g1 = LEAD_G * p->level * (0.7f + 0.3f * v->vel) * (1.0f + 0.4f * v->prs) * v->env * v->env * trim * gm;
+             if (v->swap)                 /* (taken: on its way out, 0 at its last chunk's end) */
+                 g1 *= (float)(v->swap - 1u) * (1.0f / (float)LD_SWAP);
++            if (v->exp != 1.0f || v->exp_t != 1.0f) {
++                float de = v->exp_t - v->exp;
++                v->exp = de > -1e-5f && de < 1e-5f ? v->exp_t : v->exp + de * br_k(0.2f);
++                if (v->exp != 1.0f)
++                    g1 *= v->exp;
++            }
+             dg = (g1 - g0) * (1.0f / (float)CH);
+             if (!p->whistle && w == 0.0f) {   /* WAVE's saw: the two saws alone (the second pair, times 0 below, not
+                                                * made: the same samples; admin #653, some 22 instructions a voice a
+@@ -748,8 +792,9 @@
+                 } else {                 /* out: its note from silence, held or let go since, gliding from where it
+                                           * was; FILTER ENV on from where it was, as a voice taken always had it */
+                     uint8_t held = v->gate;
+-                    float fe = v->fenv;
++                    float fe = v->fenv, se = v->sw_exp;
+                     fresh(v, v->sw_vel);
++                    v->exp = v->exp_t = se;
+                     v->fenv = fe;
+                     v->oct_t = note_oct(v->note);
+                     v->gliding = 1;
+@@ -936,7 +981,7 @@
+  * own: what it was told is what it is (the delay's lines, its filters, the cloud's share: the engine's own) */
+ static void ld_lv_none(ldv_t *v)
+ {
+-    static const ldv_t none = {.note = -1};
++    static const ldv_t none = {.note = -1, .exp = 1.0f, .exp_t = 1.0f};
+     *v = none;
+ }
+ void lead_lv(br_live *c)
+--- a/engine/dsp/lead.h
++++ b/engine/dsp/lead.h
+@@ -63,6 +63,7 @@
+                                           * let go, else the oldest held) */
+ void lead_poly_off(int note);
+ void lead_press(int note, float p);      /* 0..1: louder, the filter opens; note -1 MONO's voice, else POLY's on it */
++void lead_exp(int note, float g);        /* 0..1: MIDI polyphonic expression gain; note -1 MONO's voice, else POLY's */
+ void lead_mod(float m);                  /* 0..1: the mod wheel, VIBRATO's depth if more */
+ void lead_bend(float semis);             /* the pitch wheel, semitones */
+ /* n frames (a multiple of 32): the lead, its left into o, its right into o2 (set, not added: the dry the same in both,
+--- a/engine/frasil_engine.c
++++ b/engine/frasil_engine.c
+@@ -899,9 +899,14 @@
+  * frs_cut's RELEASE ALL had let the drone's chords and GLINT's arpeggio go with what the transport kept */
+ static void arp_notes_back(arp_t *to, const arp_t *from)   /* (its notes as kept; its steps and the grid's from the CUT) */
+ {
++    uint32_t i;
+     memcpy(to->held, from->held, sizeof to->held);
+     memcpy(to->in, from->in, sizeof to->in);
+     memcpy(to->prs, from->prs, sizeof to->prs);
++    for (i = 0; i < 16u; i++) {
++        to->exp[i] = 1.0f;
++        to->ch[i] = 16u;
++    }
+     to->ins = from->ins;
+     to->n = from->n;
+     to->vel = from->vel;
+--- a/engine/live.c
++++ b/engine/live.c
+@@ -278,18 +278,27 @@
+             V8(a->held[i]);
+             V16(a->in[i]);
+             VF(a->prs[i]);
++            if (!s->c.save) {
++                a->exp[i] = 1.0f;
++                a->ch[i] = 16u;
++            }
+         } else if (!s->c.save) {
+             a->held[i] = 0;
+             a->in[i] = 0;
+             a->prs[i] = 0.0f;
++            a->exp[i] = 1.0f;
++            a->ch[i] = 16u;
+         }
+     for (i = 0; i < 16u; i++)
+         if (i < a->pn) {
+             V8(a->play[i]);
+             VF(a->pprs[i]);
++            if (!s->c.save)
++                a->pexp[i] = 1.0f;
+         } else if (!s->c.save) {
+             a->play[i] = 0;
+             a->pprs[i] = 0.0f;
++            a->pexp[i] = 1.0f;
+         }
+     V16(a->ins);
+     V8(a->dirty);
+@@ -326,6 +335,8 @@
+ {
+     uint32_t i;
+     uint8_t nk = FRS_NKEYS;
++    if (!s->c.save)
++        exp_reset_all();
+     /* the settings, the sound's XORed with the scene's */
+     rs_bytes(s, st.v, NSOUND, s->ref ? ((const scene_t *)s->ref)->v : 0);
+     rs_bytes(s, st.v + NSOUND, LIVE_NPARAM - NSOUND, 0);
+@@ -685,11 +696,17 @@
+             V8(ldk.k[i]);
+             V8(ldk.vel[i]);
+             V8(ldk.note[i]);
++            if (!s->c.save) {
++                ldk.ch[i] = 0;
++                ldk.exp[i] = 1.0f;
++            }
+             if (ldk.k[i] >= FRS_NKEYS && ldk.k[i] < LDK_MIDI)   /* (a key's, or a MIDI note's on LEAD CH: card #228) */
+                 s->bad = 1;
+         } else if (!s->c.save) {
+             ldk.k[i] = ldk.vel[i] = 0;
+             ldk.note[i] = 0;
++            ldk.ch[i] = 0;
++            ldk.exp[i] = 1.0f;
+         }
+     VF(ld_delay_s);
+     rs_bytes(s, saved_ld, NLDS, &st.v[P_LD_WAVE]);

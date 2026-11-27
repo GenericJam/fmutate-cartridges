@@ -13,12 +13,13 @@ CHECKS = frozenset({
     "pressure_restored", "per_note_isolation", "retrigger_resets_pressure",
     "channel_isolation", "pitch_bend", "key_bend", "panic_recovery", "notes_off_keeps_bend",
 })
+FELUCCA_FAMILY = frozenset({"skiff", "caravel"})
 
 
 def required_checks(fid, value):
     """Every check a configured firmware's proof must pass: the shared audio checks, the Felucca lifecycle where it
     applies, and one neutral_<name> per test of its own suite (`neutral` in the manifest)."""
-    return (CHECKS | ({"voice_lifecycle"} if fid in {"skiff", "caravel"} else set())
+    return (CHECKS | ({"voice_lifecycle"} if fid in FELUCCA_FAMILY else set())
             | {f"neutral_{t['name']}" for t in value["neutral"]})
 
 

@@ -1,0 +1,842 @@
+FMutate expressive controls for Skiff (GPL-3.0-only, preserving upstream attribution).
+
+MIDI polyphonic key pressure (0xAn) controls per-voice square-law gain by source MIDI key
+and channel (127 unity skipped = bit-identical, 0 silent), isolated across channels, chord
+tones, octave-expanded ARP steps, strum queues, and deferred engine-switch queues.
+Ownership comes strictly from live MIDI input paths (sequencer and panel notes keep unity
+gain even when a MIDI key of the same pitch is held). Existing MIDI pitch bend, velocity,
+CC120/123 (keep bend) and CC121 (reset bend and pressure) are preserved; persisted settings
+and neutral audio are untouched.
+
+--- a/firmware/src/follow.c
++++ b/firmware/src/follow.c
+@@ -161,6 +161,7 @@
+     return x;
+ }
+ 
++static void expr_fol_collision(track_t *t, uint32_t o);
+ /* (voice.c trk_note_off) a note track t plays ends: the note it sounded (the note itself when none is kept); 255
+  * while another note of the track sounds it too (FIT: two onto one), which ends it */
+ static __attribute__((noinline)) uint32_t fol_off(track_t *t, uint32_t note)
+@@ -171,8 +172,10 @@
+         return note;
+     m[note & 127u] = 0;
+     for (i = 0; i < 128u; i++)
+-        if (m[i] == o)
++        if (m[i] == o) {
++            expr_fol_collision(t, o);
+             return 255u;
++        }
+     return o - 1u;
+ }
+ 
+--- a/firmware/src/midi_control.c
++++ b/firmware/src/midi_control.c
+@@ -74,6 +74,147 @@
+     return 0;
+ }
+ 
++static uint16_t midi_owner_of(const track_t *t, uint32_t note)
++{
++    uint32_t ch, m, j, id = trk_index(t) + 1u;
++    for (ch = 0; ch < 16u; ch++)
++        if ((midi_notes[ch][note] & 0x7Fu) == id && !mchord_of(ch, note, id))
++            return (uint16_t)(1u + (ch << 7) + note);
++    for (m = 0; m < MCHORD_N; m++)
++        if (mchord[m].id == id)
++            for (j = 0; j < mchord[m].n; j++)
++                if (mchord[m].note[j] == note)
++                    return (uint16_t)(1u + ((mchord[m].ch & 15u) << 7) + (mchord[m].src & 127u));
++    return 0;
++}
++
++static void expr_restore_midi(track_t *t, uint32_t note)
++{
++    uint32_t p = trk_index(t), i, seq_on = 0;
++    uint32_t snote = fol_map[p][note & 127u] ? (uint32_t)fol_map[p][note & 127u] - 1u : note;
++    uint16_t owner = midi_owner_of(t, note);
++    for (i = 0; i < t->nheld; i++)
++        if (t->held[i] == note)
++            expr_held_src[p][i] = owner;
++    for (i = 0; i < t->xp_n; i++)
++        if (t->xp_note[i] == snote)
++            expr_xp_owner[p][i] = owner;
++    for (i = 0; i < t->seq_n; i++) {
++        uint32_t sqn = t->seq_notes[i];
++        uint32_t sqs = fol_map[p][sqn & 127u] ? (uint32_t)fol_map[p][sqn & 127u] - 1u : sqn;
++        if (sqn == note || sqs == snote)
++            seq_on = 1;
++    }
++    if (seq_on)
++        return;
++    for (i = 0; i < sq[p].n; i++)
++        if (sq[p].note[i] == note)
++            sq[p].owner[i] = owner;
++    for (i = 0; i < t->nmono; i++)
++        if (t->mono_stack[i] == snote)
++            expr_mono_owner[p][i] = owner;
++    if (trk_vmode(t) != V_POLY) {
++        if (t->mono_note == snote) {
++            uint32_t nv = trk_vmode(t) == V_UNISON ? uni_nvoice(t) : 1u;
++            expr_cur_owner = expr_mono_pick(t);
++            for (i = 0; i < nv; i++)
++                if (t->v[i].active && t->v[i].gate)
++                    expr_bind(t, &t->v[i]);
++        }
++        return;
++    }
++    if (!t->p[P_AMODE] || in_solo) {
++        expr_cur_owner = owner;
++        for (i = 0; i < NVOICE; i++)
++            if (t->v[i].active && t->v[i].gate && t->v[i].note == snote)
++                expr_bind(t, &t->v[i]);
++    }
++}
++
++static void expr_fol_collision(track_t *t, uint32_t o)
++{
++    uint32_t p = trk_index(t), snote = o - 1u, i, seq_on = 0, panel = 0, found = 0;
++    uint16_t owner = 0;
++    for (i = 0; i < t->seq_n; i++) {
++        uint32_t sqn = t->seq_notes[i];
++        uint32_t sqs = fol_map[p][sqn & 127u] ? (uint32_t)fol_map[p][sqn & 127u] - 1u : sqn;
++        if (sqn == snote || sqs == snote)
++            seq_on = 1;
++    }
++    if (seq_on)
++        return;
++    for (i = 0; i < 128u; i++) {
++        if (fol_map[p][i] != o)
++            continue;
++        if (midi_local_held(t, i)) {
++            panel = 1;
++            break;
++        }
++        if (!found && midi_note_held(t, i)) {
++            owner = midi_owner_of(t, i);
++            found = 1;
++        }
++    }
++    if (!panel && !found)
++        return;
++    if (panel)
++        owner = 0;
++    for (i = 0; i < t->xp_n; i++)
++        if (t->xp_note[i] == snote)
++            expr_xp_owner[p][i] = owner;
++    for (i = 0; i < t->nmono; i++)
++        if (t->mono_stack[i] == snote)
++            expr_mono_owner[p][i] = owner;
++    if (trk_vmode(t) != V_POLY) {
++        if (t->mono_note == snote) {
++            uint32_t nv = trk_vmode(t) == V_UNISON ? uni_nvoice(t) : 1u;
++            expr_cur_owner = expr_mono_pick(t);
++            for (i = 0; i < nv; i++)
++                if (t->v[i].active && t->v[i].gate)
++                    expr_bind(t, &t->v[i]);
++        }
++        return;
++    }
++    if (!t->p[P_AMODE] || in_solo) {
++        expr_cur_owner = owner;
++        for (i = 0; i < NVOICE; i++)
++            if (t->v[i].active && t->v[i].gate && t->v[i].note == snote)
++                expr_bind(t, &t->v[i]);
++    }
++}
++
++static int expr_held(const track_t *t, uint16_t owner);
++static void expr_drop_owner(track_t *t, uint16_t owner)
++{
++    uint32_t ch, key, p = trk_index(t), v;
++    if (!owner || expr_held(t, owner))
++        return;
++    ch = (owner - 1u) >> 7;
++    key = (owner - 1u) & 127u;
++    if (ch < 16u)
++        expr_depth[ch][key] = 0;
++    for (v = 0; v < NVOICE; v++)
++        if (expr_voice[p][v] == owner)
++            expr_voice[p][v] = 0;
++}
++
++static void expr_clear_held(track_t *t)
++{
++    uint32_t p = trk_index(t), i, n = t->nheld > expr_held_n[p] ? t->nheld : expr_held_n[p];
++    uint16_t old[16];
++    if (n > 16u)
++        n = 16u;
++    for (i = 0; i < n; i++) {
++        old[i] = expr_held_src[p][i];
++        expr_held_src[p][i] = 0;
++    }
++    t->nheld = 0;
++    expr_held_n[p] = 0;
++    for (i = 0; i < n; i++)
++        if (old[i])
++            expr_drop_owner(t, old[i]);
++}
++
+ static void midi_release(uint32_t ch, uint32_t note)
+ {
+     uint32_t id = midi_notes[ch][note] & 0x7Fu;
+@@ -97,7 +238,22 @@
+         for (i = 0; i < n; i++)
+             if (!midi_local_held(&trk[id - 1u], nn[i]))
+                 input_off(&trk[id - 1u], nn[i]);  /* input_off also checks other MIDI owners */
++        expr_drop_owner(&trk[id - 1u], (uint16_t)(1u + ((ch & 15u) << 7) + (note & 127u)));
+     }
++}
++
++static int expr_held(const track_t *t, uint16_t owner)
++{
++    uint32_t ch = (owner - 1u) >> 7, key = (owner - 1u) & 127u, p = trk_index(t), i;
++    if (!owner || ch >= 16u)
++        return 0;
++    if (expr_midi_owner == owner || (midi_notes[ch][key] & 0x7Fu) == p + 1u)
++        return 1;
++    if (t->p[P_AMODE] && t->p[P_AHOLD])
++        for (i = 0; i < t->nheld; i++)
++            if (expr_held_src[p][i] == owner)
++                return 1;
++    return 0;
+ }
+ 
+ /* a MIDI note-on (ch, note) of track t: its chord (chord.c) or the note alone. A note another key or MIDI
+@@ -113,9 +269,12 @@
+         n = 1;
+         nn[0] = (uint8_t)note;
+     }
++    expr_midi_owner = (uint16_t)(1u + ((ch & 15u) << 7) + (note & 127u));
++    expr_pressure(t, ch, note, 127);
+     for (i = 0; i < n; i++)
+         if (!midi_note_held(t, nn[i]) && !midi_local_held(t, nn[i]))
+             input_on(t, nn[i], vel);
++    expr_midi_owner = 0;
+     if (n > 1u || nn[0] != note) {
+         mchord_t *m = &mchord[f];
+         m->ch = (uint8_t)ch;
+@@ -152,6 +311,16 @@
+     }
+ }
+ 
++/* Poly pressure addresses the original MIDI key, not a guessed sounding pitch.
++ * Chord tones and ARP octaves share their key's owner; other channels own nothing. */
++static void midi_pressure_event(uint32_t ch, uint32_t note, uint32_t value)
++{
++    uint32_t id = midi_notes[ch][note] & 0x7Fu;
++    if (!id)
++        return;
++    expr_pressure(&trk[id - 1u], ch, note, value);
++}
++
+ static void midi_pedal_up(uint32_t ch)
+ {
+     uint32_t note;
+@@ -170,8 +339,10 @@
+         if (!(midi_ch[ch].targets & (1u << track)))
+             continue;
+         for (note = 0; note < 128u; note++)
+-            if ((midi_notes[ch][note] & 0x7Fu) == track + 1u)
++            if ((midi_notes[ch][note] & 0x7Fu) == track + 1u) {
+                 midi_notes[ch][note] = 0;
++                expr_depth[ch][note] = 0;
++            }
+         midi_ch[ch].targets &= (uint8_t)~(1u << track);
+         midi_ch[ch].owned[track] = 0;
+     }
+@@ -185,7 +356,8 @@
+     track_t *t = &trk[track];
+     uint32_t i;
+     trk_all_off(t);
+-    t->nheld = t->arp_phys = t->rh_n = 0;
++    expr_clear_held(t);
++    t->arp_phys = t->rh_n = 0;
+     arp_forget(t);
+     t->seq_n = t->seq_hold = t->slide_glide = 0;
+     for (i = 0; i < NVOICE; i++)
+@@ -337,8 +509,11 @@
+     case 120:                                      /* All Sound Off: ignores the pedal */
+         mask = midi_targets(ch);
+         for (i = 0; i < NTRK; i++)
+-            if (mask & (1u << i))
++            if (mask & (1u << i)) {
+                 midi_silence_track(i);
++                if (i < NPART)
++                    midi_expression(&trk[i], c);
++            }
+         break;
+     case 123:                                      /* All Notes Off: normal releases, honours pedal */
+         mask = midi_targets(ch);
+@@ -348,7 +523,8 @@
+         for (i = 0; i < NTRK; i++)
+             if ((mask & (1u << i)) && !midi_track_held(i)) {
+                 trk_all_off(&trk[i]);
+-                trk[i].nheld = trk[i].arp_phys = trk[i].rh_n = 0;
++                expr_clear_held(&trk[i]);
++                trk[i].arp_phys = trk[i].rh_n = 0;
+                 arp_forget(&trk[i]);
+             }
+         break;
+@@ -356,6 +532,12 @@
+         c->bend = 0;
+         c->wheel = 0;
+         c->rpn_msb = c->rpn_lsb = 127;
++        for (i = 0; i < 128u; i++)
++            expr_depth[ch][i] = 0;
++        for (mask = 0; mask < NTRK; mask++)
++            for (i = 0; i < NVOICE; i++)
++                if (trk[mask].v[i].active && expr_voice[mask][i] && ((expr_voice[mask][i] - 1u) >> 7) == ch)
++                    expr_gain[mask][i] = 0;
+         midi_expression_channel(ch);
+         midi_pedal_up(ch);
+         break;
+@@ -400,6 +582,7 @@
+         for (note = 0; note < 128u; note++)
+             if (midi_notes[ch][note])
+                 midi_release(ch, note);
++        memset(expr_depth[ch], 0, sizeof expr_depth[ch]);
+         c->pedal = c->wheel = 0;
+         c->bend = 0;
+         c->rpn_msb = c->rpn_lsb = 127;
+@@ -450,6 +633,8 @@
+     mn.quiet = 1;                                  /* ((2.2) what MIDI IN plays is never sent back out: seq.c mo_note) */
+     if (st == 0x90u || st == 0x80u)
+         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);
++    else if (st == 0xA0u)
++        midi_pressure_event(ch, d1, d2);
+     else if (st == 0xE0u) {
+         midi_channel(ch)->bend = (int16_t)((int32_t)(d1 | (d2 << 7)) - 8192);
+         midi_expression_channel(ch);
+--- a/firmware/src/seq.c
++++ b/firmware/src/seq.c
+@@ -63,6 +63,10 @@
+  * ISR's trk[] indexing wants it */
+ static uint8_t held_key[NTRK][16];
+ static int8_t held_dt[NTRK][16];
++static uint16_t expr_held_src[NTRK][16], expr_arp_list[64];
++static uint8_t expr_held_n[NTRK];
++static void expr_drop_owner(track_t *t, uint16_t owner);
++static void expr_clear_held(track_t *t);
+ static volatile uint8_t kb_asleep;       /* MENU > SCREEN OFF (ui.c): the screen dark or waking, a key pressed now only
+                                           * wakes it (silent, no layer, its release nothing) */
+ static uint8_t last_note = 60;
+@@ -271,22 +275,32 @@
+ #define ARP_START 0xFFFFFFFu                    /* arp_pos: the first key just went down (arp_add) */
+ static void arp_add(track_t *t, uint32_t note)
+ {
+-    uint32_t i, k = in_key - 1u;
++    uint32_t i, k = in_key - 1u, p = trk_index(t);
+     if (t->p[P_AHOLD] && t->arp_phys == 0u)
+-        t->nheld = 0;                               /* new chord replaces the latched one */
++        expr_clear_held(t);                         /* new chord replaces the latched one */
+     t->arp_phys++;                                  /* every key-down: arp_remove counts every key-up */
+     for (i = 0; i < t->nheld; i++)
+-        if (t->held[i] == note)
++        if (t->held[i] == note) {
++            uint16_t prev = expr_held_src[p][i];
++            expr_held_src[p][i] = expr_midi_owner;
++            if (t->nheld > expr_held_n[p])
++                expr_held_n[p] = t->nheld;
++            if (prev && prev != expr_midi_owner)
++                expr_drop_owner(t, prev);
+             return;                                 /* repeated note-on: not a new note */
++        }
+     if (t->nheld < 16u) {
+         /* (Felucca #191) a key the track's scale keyboard maps (not the DRUM grid, not an engine's own map) is kept as
+          * that key, so TRN, ROOT, SCALE and QNT reach the notes the arp holds (arp_list); the octave stays the one it
+          * was pressed in. Anything else (MIDI IN) plays as it came, as before */
+-        uint8_t *hk = held_key[trk_index(t)];
++        uint8_t *hk = held_key[p];
+         hk[t->nheld] = in_key && !song.grid && kb_engine(t, k) < 0
+                            ? (uint8_t)(in_key | (uint32_t)(song.octave + 3) << 5) : 0u;
+-        held_dt[trk_index(t)][t->nheld] = (int8_t)(hk[t->nheld] ? (int32_t)note - kb_note[k] : 0);
++        held_dt[p][t->nheld] = (int8_t)(hk[t->nheld] ? (int32_t)note - kb_note[k] : 0);
++        expr_held_src[p][t->nheld] = expr_midi_owner;
+         t->held[t->nheld++] = (uint8_t)note;
++        if (t->nheld > expr_held_n[p])
++            expr_held_n[p] = t->nheld;
+     }
+     if (t->nheld == 1u) {
+         t->arp_pos = ARP_START;                     /* onto the grid on this block (arp_step) */
+@@ -296,9 +310,10 @@
+ 
+ static void arp_remove(track_t *t, uint32_t note)
+ {
+-    uint32_t i, k = 0;
+-    uint8_t *hk = held_key[trk_index(t)];
+-    int8_t *dt = held_dt[trk_index(t)];
++    uint32_t i, k = 0, p = trk_index(t), nd = 0;
++    uint16_t dropped[16];
++    uint8_t *hk = held_key[p];
++    int8_t *dt = held_dt[p];
+     if (t->arp_phys)
+         t->arp_phys--;
+     if (t->p[P_AHOLD])
+@@ -307,9 +322,17 @@
+         if (t->held[i] != note) {
+             hk[k] = hk[i];
+             dt[k] = dt[i];
++            expr_held_src[p][k] = expr_held_src[p][i];
+             t->held[k++] = t->held[i];
++        } else if (expr_held_src[p][i]) {
++            dropped[nd++] = expr_held_src[p][i];
+         }
++    for (i = k; i < expr_held_n[p] && i < 16u; i++)
++        expr_held_src[p][i] = 0;
+     t->nheld = (uint8_t)k;
++    expr_held_n[p] = (uint8_t)k;
++    for (i = 0; i < nd; i++)
++        expr_drop_owner(t, dropped[i]);
+ }
+ 
+ static void rec_note(track_t *t, uint32_t note, uint32_t vel);
+@@ -452,6 +475,14 @@
+         }
+ }
+ 
++static void expr_note_on(track_t *t, uint32_t note, uint16_t owner, uint32_t vel)
++{
++    uint16_t saved = expr_active_owner;
++    expr_active_owner = owner;
++    trk_note_on(t, note, vel);
++    expr_active_owner = saved;
++}
++
+ static __attribute__((noinline)) void arp_chord(track_t *t, const uint32_t *list, uint32_t n)
+ {
+     uint32_t i, nt, top = 0, o = t->arp_idx % (uint32_t)(t->p[P_AOCT] > 0 ? t->p[P_AOCT] : 1);
+@@ -469,7 +500,7 @@
+             rec_note(t, nt, 100);
+         else
+             take_note(t, nt, 100);                  /* (Skiff: TAKES) */
+-        trk_note_on(t, nt, 100);
++        expr_note_on(t, nt, expr_arp_list[i], 100);
+     }
+ }
+ 
+@@ -497,8 +528,10 @@
+ static __attribute__((noinline)) uint32_t arp_pick(track_t *t, uint32_t *list, uint32_t len)
+ {
+     uint32_t i = t->arp_idx, m = (uint32_t)t->p[P_AMODE], cyc, k, w;
+-    if (m == AM_UP8 && len < 64u)                   /* UP+8: the first note again over the top */
++    if (m == AM_UP8 && len < 64u) {                 /* UP+8: the first note again over the top */
++        expr_arp_list[len] = expr_arp_list[0];
+         list[len++] = (uint32_t)clamp((int32_t)list[0] + 12 * t->p[P_AOCT], 0, 127);
++    }
+     cyc = len > 1u ? 2u * len - 2u : 1u;
+     k = i % cyc;
+     switch (m) {
+@@ -574,8 +607,10 @@
+ static uint32_t arp_list(const track_t *t, uint32_t *list, uint32_t *cnt)
+ {
+     uint32_t i, j, n = 0, x, s, last = 0, len = 0, o;
++    uint16_t last_src = 0, xs;
+     const uint8_t *hk = held_key[trk_index(t)];
+     const int8_t *dt = held_dt[trk_index(t)];
++    const uint16_t *hs = expr_held_src[trk_index(t)];
+     for (i = 0; i < t->nheld; i++) {
+         x = t->held[i];
+         if ((s = hk[i]) != 0u) {
+@@ -585,10 +620,13 @@
+             x = (uint32_t)clamp((int32_t)x + dt[i], 0, 127);
+         }
+         last = x;
++        last_src = hs[i];
+         for (j = 0; j < n && list[j] != x; j++)
+             ;
+-        if (j == n)
++        if (j == n) {
++            expr_arp_list[n] = hs[i];
+             list[n++] = x;
++        }
+     }
+     *cnt = n;
+     if (!t->p[P_AORDER])
+@@ -597,11 +635,16 @@
+                 x = list[j];
+                 list[j] = list[j - 1];
+                 list[j - 1] = x;
++                xs = expr_arp_list[j];
++                expr_arp_list[j] = expr_arp_list[j - 1];
++                expr_arp_list[j - 1] = xs;
+             }
+     for (o = 0; o < (uint32_t)t->p[P_AOCT]; o++)
+-        for (i = 0; i < n && len < 64u; i++)
++        for (i = 0; i < n && len < 64u; i++) {
++            expr_arp_list[len] = expr_arp_list[i];
+             list[len++] = clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
+-    if (n && t->p[P_AMODE] == AM_REPEAT) { list[0] = last; len = 1; } /* REPEAT: last played note, no octave traversal */
++        }
++    if (n && t->p[P_AMODE] == AM_REPEAT) { list[0] = last; expr_arp_list[0] = last_src; len = 1; } /* REPEAT: last played note, no octave traversal */
+     return len;
+ }
+ 
+@@ -630,7 +673,7 @@
+             rec_note(t, t->arp_note, 100);           /* recording: what the arp plays */
+         else
+             take_note(t, t->arp_note, 100);         /* (Skiff: TAKES, the same) */
+-        trk_note_on(t, t->arp_note, 100);
++        expr_note_on(t, t->arp_note, expr_arp_list[j], 100);
+     }
+ }
+ 
+@@ -976,17 +1019,21 @@
+     if (arp)
+         arp_add(t, note);
+     else
+-        trk_note_on(t, note, vel);
++        expr_note_on(t, note, expr_midi_owner, vel);
+ }
+ 
+ static int midi_note_held(const track_t *t, uint32_t note);
+ static int midi_local_held(const track_t *t, uint32_t note);
++static void expr_restore_midi(track_t *t, uint32_t note);
+ static void input_off(track_t *t, uint32_t note)
+ {
+     if (!in_solo)
+         fol_key(t, note, 0);                        /* ((2.1) one fewer holding its chord) */
+-    if (midi_note_held(t, note))
++    if (midi_note_held(t, note)) {
++        if (!midi_local_held(t, note))
++            expr_restore_midi(t, note);
+         return;
++    }
+     if (cin_left) {                                 /* a kept note let go before step 1: recorded, then let go */
+         uint32_t i = trk_index(t), k;
+         for (k = 0; k < cin_n[i]; k++)
+@@ -2100,6 +2147,7 @@
+         memset(midi_ch, 0, sizeof midi_ch);
+         memset(midi_owners, 0, sizeof midi_owners);
+         memset(mchord, 0, sizeof mchord);
++        memset(expr_depth, 0, sizeof expr_depth);
+         midi_hint = 0;
+         for (i = 0; i < NTRK; i++) {
+             trk[i].rh_n = trk[i].rskip_n = 0;
+@@ -2112,17 +2160,30 @@
+     }
+     for (i = 0; i < NTRK; i++) {
+         track_t *t = &trk[i];
++        if (expr_held_n[i] > t->nheld) {
++            uint32_t j, n = expr_held_n[i] > 16u ? 16u : expr_held_n[i];
++            uint16_t old[16];
++            uint32_t no = 0;
++            for (j = t->nheld; j < n; j++) {
++                if (expr_held_src[i][j])
++                    old[no++] = expr_held_src[i][j];
++                expr_held_src[i][j] = 0;
++            }
++            expr_held_n[i] = t->nheld;
++            for (j = 0; j < no; j++)
++                expr_drop_owner(t, old[j]);
++        }
+         if ((pr >> i) & 1u) {
+             midi_forget_track(i);
+             trk_all_off(t);
+-            t->nheld = 0;
++            expr_clear_held(t);
+             t->arp_phys = 0;
+             arp_forget(t);
+         }
+         engine_block(t);                              /* engine switch: fade, then switch (voice.c) */
+         /* ARP turned off, or HOLD released with no key down: drop the latched chord */
+         if ((t->armp && !t->p[P_AMODE]) || (t->aholdp && !t->p[P_AHOLD] && !t->arp_phys)) {
+-            t->nheld = 0;
++            expr_clear_held(t);
+             if (!t->p[P_AMODE])
+                 t->arp_phys = 0;
+             if (t->arp_note)
+--- a/firmware/src/voice.c
++++ b/firmware/src/voice.c
+@@ -13,6 +13,43 @@
+  * declicks it); one of the part's own is restarted in place, as before. Extra UNISON
+  * voices only start when there is room. */
+ static uint32_t vage;                                   /* voice ages: one clock for every part */
++/* FMutate live expression: inverse pressure (0 = unity), outside saved tracks.
++ * Owner id = 1 + ((ch << 7) | key) for MIDI keys, 0 for sequencer / panel notes.
++ * Each sounding voice snapshots its owner, including chord tones and octave-expanded
++ * ARP notes. Released tails keep their level; a stolen/retriggered slot is rebound. */
++static uint8_t expr_depth[16][128], expr_gain[NTRK][NVOICE];
++static uint16_t expr_voice[NTRK][NVOICE], expr_mono_owner[NTRK][8], expr_xp_owner[NTRK][4];
++static uint16_t expr_midi_owner, expr_active_owner, expr_cur_owner;
++static int expr_held(const track_t *t, uint16_t owner);
++
++static void expr_forget(track_t *t)
++{
++    uint32_t p = (uint32_t)(t - trk);
++    memset(expr_voice[p], 0, sizeof expr_voice[p]);
++    memset(expr_mono_owner[p], 0, sizeof expr_mono_owner[p]);
++    memset(expr_xp_owner[p], 0, sizeof expr_xp_owner[p]);
++}
++
++static void expr_pressure(track_t *t, uint32_t ch, uint32_t key, uint32_t value)
++{
++    uint32_t p = (uint32_t)(t - trk), i;
++    uint16_t owner = (uint16_t)(1u + ((ch & 15u) << 7) + (key & 127u));
++    uint8_t d = (uint8_t)(127u - (value & 127u));
++    expr_depth[ch & 15u][key & 127u] = d;
++    for (i = 0; i < NVOICE; i++)
++        if (t->v[i].active && expr_voice[p][i] == owner)
++            expr_gain[p][i] = d;
++}
++
++static void expr_bind(track_t *t, voice_t *v)
++{
++    uint32_t p = (uint32_t)(t - trk), i = (uint32_t)(v - t->v);
++    uint16_t owner = expr_cur_owner;
++    if (owner && !expr_held(t, owner))
++        owner = 0;
++    expr_voice[p][i] = owner;
++    expr_gain[p][i] = owner ? expr_depth[(owner - 1u) >> 7][(owner - 1u) & 127u] : 0;
++}
+ static int32_t lfo_wave(track_t *t, uint32_t ph)
+ {
+     switch (t->p[P_LWAVE]) {
+@@ -318,6 +355,7 @@
+     int32_t s0 = v->s[0], s1 = v->s[1], s4 = v->s[4], s5 = v->s[5], s6 = v->s[6], s7 = v->s[7];
+     uint32_t keep = e->keep;
+     v->note = (uint8_t)note;
++    expr_bind(t, v);
+     v->vel = (uint8_t)vel;
+     v->gate = 1;
+     v->active = 1;
+@@ -386,6 +424,7 @@
+             }
+         } else {                                            /* legato: new pitch, same envelope */
+             v->note = (uint8_t)note;
++            expr_bind(t, v);
+             v->pitch16 = (int32_t)note * 16;
+             v->mvel = t->m_vel;
+             v->mrnd = t->m_rnd;
+@@ -398,27 +437,36 @@
+ }
+ 
+ /* the note the mono stack asks for (PRIO: LAST / LOW / HIGH), 0 = none */
+-static uint32_t mono_pick(const track_t *t)
++static uint32_t mono_pick_idx(const track_t *t)
+ {
+-    uint32_t i, n;
+-    if (!t->nmono)
+-        return 0;
+-    n = t->mono_stack[t->nmono - 1u];
++    uint32_t i, best = t->nmono - 1u;
+     for (i = 0; i < t->nmono; i++) {
+-        if (t->p[P_PRIO] == 1 && t->mono_stack[i] < n)
+-            n = t->mono_stack[i];
+-        if (t->p[P_PRIO] == 2 && t->mono_stack[i] > n)
+-            n = t->mono_stack[i];
++        if (t->p[P_PRIO] == 1 && t->mono_stack[i] < t->mono_stack[best])
++            best = i;
++        if (t->p[P_PRIO] == 2 && t->mono_stack[i] > t->mono_stack[best])
++            best = i;
+     }
+-    return n;
++    return best;
+ }
+ 
++static uint32_t mono_pick(const track_t *t)
++{
++    return t->nmono ? t->mono_stack[mono_pick_idx(t)] : 0;
++}
++
++static uint16_t expr_mono_pick(const track_t *t)
++{
++    return t->nmono ? expr_mono_owner[t - trk][mono_pick_idx(t)] : 0;
++}
++
+ static void mono_remove(track_t *t, uint32_t note)
+ {
+-    uint32_t j, k = 0;
++    uint32_t p = (uint32_t)(t - trk), j, k = 0;
+     for (j = 0; j < t->nmono; j++)
+-        if (t->mono_stack[j] != note)
++        if (t->mono_stack[j] != note) {
++            expr_mono_owner[p][k] = expr_mono_owner[p][j];
+             t->mono_stack[k++] = t->mono_stack[j];
++        }
+     t->nmono = (uint8_t)k;
+ }
+ 
+@@ -443,7 +491,7 @@
+  * sent, ended */
+ static int mo_note(track_t *t, uint32_t note, uint32_t vel, uint32_t keys);
+ static void mo_flush(uint32_t mask);
+-static void trk_sound_on(track_t *t, uint32_t note, uint32_t vel);
++static void trk_sound_on(track_t *t, uint32_t note, uint32_t vel, uint16_t owner);
+ /* (2.5, the user's 7B) STRUM (SCL > CHORD's KNOB 3, ms) and DIR (KNOB 4: DOWN UP ALT): the notes a POLY track starts in
+  * one block (a chord key, MIDI IN's chord, a step's, the ARP's, STEP PREVIEW's) start one after another over STRUM: low
+  * to high (DOWN), high to low (UP), or the two in turn (ALT, DOWN first from PLAY). trk_note_on keeps them (sq_in: in
+@@ -451,25 +499,27 @@
+  * first and times the others; strum_tick, at the next blocks' start, starts each as its time comes. A note let go
+  * before its time never starts; a panic forgets them. One note, a kit, MONO / LEGATO / UNISON, STRUM OFF: at once */
+ #define SQ_N 8u
+-static struct { uint8_t n, fresh, alt, note[SQ_N], vel[SQ_N]; uint16_t due[SQ_N]; } sq[NTRK];   /* fresh: the last
++static struct { uint8_t n, fresh, alt, note[SQ_N], vel[SQ_N]; uint16_t due[SQ_N], owner[SQ_N]; } sq[NTRK];   /* fresh: the last
+                                                          * ones, this block's, not yet timed */
+ static uint8_t sq_in;
+ static int chord_kit(const track_t *t);
+-static void trk_note_go(track_t *t, uint32_t note, uint32_t vel);
++static void trk_note_go(track_t *t, uint32_t note, uint32_t vel, uint16_t owner);
+ static void sq_take(uint32_t k, uint32_t j)             /* entry j of track k's out */
+ {
+     for (; j + 1u < sq[k].n; j++) {
+         sq[k].note[j] = sq[k].note[j + 1u];
+         sq[k].vel[j] = sq[k].vel[j + 1u];
+         sq[k].due[j] = sq[k].due[j + 1u];
++        sq[k].owner[j] = sq[k].owner[j + 1u];
+     }
+     sq[k].n--;
+ }
+ static void sq_go(uint32_t k, uint32_t j)               /* .. and started */
+ {
+     uint32_t note = sq[k].note[j], vel = sq[k].vel[j];
++    uint16_t owner = sq[k].owner[j];
+     sq_take(k, j);
+-    trk_note_go(&trk[k], note, vel);
++    trk_note_go(&trk[k], note, vel, owner);
+ }
+ static __attribute__((noinline)) void strum_tick(uint32_t n)   /* n samples on: those whose time came, started */
+ {
+@@ -495,10 +545,13 @@
+         for (i = b + 1u; i < sq[k].n; i++)              /* (low to high: a chord's few, by insertion) */
+             for (j = i; j > b && sq[k].note[j - 1u] > sq[k].note[j]; j--) {
+                 uint8_t x = sq[k].note[j], y = sq[k].vel[j];
++                uint16_t z = sq[k].owner[j];
+                 sq[k].note[j] = sq[k].note[j - 1u];
+                 sq[k].vel[j] = sq[k].vel[j - 1u];
++                sq[k].owner[j] = sq[k].owner[j - 1u];
+                 sq[k].note[j - 1u] = x;
+                 sq[k].vel[j - 1u] = y;
++                sq[k].owner[j - 1u] = z;
+             }
+         up = t->p[P_SDIR] == 1 || (t->p[P_SDIR] == 2 && sq[k].alt);
+         if (t->p[P_SDIR] == 2 && m > 1u)
+@@ -513,13 +566,14 @@
+                 j++;
+     }
+ }
+-static int strum_add(track_t *t, uint32_t note, uint32_t vel)   /* kept for strum_flush: 1; to start now: 0 */
++static int strum_add(track_t *t, uint32_t note, uint32_t vel, uint16_t owner)   /* kept for strum_flush: 1; to start now: 0 */
+ {
+     uint32_t k = (uint32_t)(t - trk) % NTRK;
+     if (!sq_in || !t->p[P_STRUM] || trk_vmode(t) != V_POLY || chord_kit(t) || sq[k].n >= SQ_N)
+         return 0;
+     sq[k].note[sq[k].n] = (uint8_t)note;
+     sq[k].vel[sq[k].n] = (uint8_t)vel;
++    sq[k].owner[sq[k].n] = owner;
+     sq[k].due[sq[k].n++] = 0;
+     sq[k].fresh++;
+     return 1;
+@@ -539,14 +593,15 @@
+ /* a note starts on track t: (2.5) a strum's kept for its time, else trk_note_go now */
+ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
+ {
+-    if (!t->p[P_MUTE] && !strum_add(t, note, vel))
+-        trk_note_go(t, note, vel);
++    uint16_t owner = expr_active_owner && expr_held(t, expr_active_owner) ? expr_active_owner : 0;
++    if (!t->p[P_MUTE] && !strum_add(t, note, vel, owner))
++        trk_note_go(t, note, vel, owner);
+ }
+ /* .. moved into the chord it follows, out to MIDI as it is asked for (an engine switch's fade delays only the voice:
+  * what MIDI IN plays then is never sent back later), then its voice */
+-static void trk_note_go(track_t *t, uint32_t note, uint32_t vel)
++static void trk_note_go(track_t *t, uint32_t note, uint32_t vel, uint16_t owner)
+ {
+-    uint32_t i;
++    uint32_t i, p = (uint32_t)(t - trk);
+     if (t->p[P_MUTE])
+         return;
+     note = fol_on(t, note);                             /* ((2.1) a follower's: into the chord it follows) */
+@@ -560,15 +615,18 @@
+         i = i < t->xp_n ? i : t->xp_n - 1u;             /* (full: the last one is replaced) */
+         t->xp_note[i] = (uint8_t)note;
+         t->xp_vel[i] = (uint8_t)vel;
++        expr_xp_owner[p][i] = owner;
+         return;
+     }
+-    trk_sound_on(t, note, vel);
++    trk_sound_on(t, note, vel, owner);
+ }
+ 
+ /* the voice of a note track t sounds (moved already) */
+-static void trk_sound_on(track_t *t, uint32_t note, uint32_t vel)
++static void trk_sound_on(track_t *t, uint32_t note, uint32_t vel, uint16_t owner)
+ {
+-    uint32_t any = 0, i, mode = trk_vmode(t);
++    uint32_t any = 0, i, mode = trk_vmode(t), p = (uint32_t)(t - trk);
++    if (owner && !expr_held(t, owner))
++        owner = 0;
+     duck_note(t, note);                                 /* (Skiff) a hit another track may duck under */
+     t->hits++;                                          /* ((Skiff Q6) QUARK's event display) */
+     vel = mod_note(t, note, vel);                       /* the matrix's VEL / KEY / RAND ((1.3) VEL as a destination) */
+@@ -581,6 +639,7 @@
+         t->nmono = 0;                                   /* no stale mono stack after a mode change */
+         t->mono_note = 0;
+         v->fine = 0;
++        expr_cur_owner = owner;
+         voice_start(t, v, note, vel, t->p[P_GLIDE] != 0 && !ENGINES[t->engine]->oneshot);
+         return;
+     }
+@@ -589,10 +648,17 @@
+         mono_remove(t, note);
+         if (t->nmono >= 8u)
+             mono_remove(t, t->mono_stack[0]);
++        expr_mono_owner[p][t->nmono] = owner;
+         t->mono_stack[t->nmono++] = (uint8_t)note;
+         want = mono_pick(t);
+-        if (sounding && want == t->mono_note)
++        expr_cur_owner = expr_mono_pick(t);
++        if (sounding && want == t->mono_note) {
++            uint32_t nv = mode == V_UNISON ? uni_nvoice(t) : 1u;
++            for (i = 0; i < nv; i++)
++                if (t->v[i].active && t->v[i].gate)
++                    expr_bind(t, &t->v[i]);
+             return;                                     /* LOW / HIGH priority: this key does not win */
++        }
+         if (mode == V_MONO)                             /* MONO: always retrigger, glide when GLIDE is set */
+             mono_play(t, want, vel, 1, t->p[P_GLIDE] != 0 || t->slide_glide);
+         else                                            /* LEGATO / UNISON: glide only between held notes */
+@@ -608,6 +674,7 @@
+     note = fol_off(t, note);                           /* ((2.1) the note it sounded; 255: another still sounds it) */
+     for (i = 0; i < t->xp_n; i++)                       /* not sounding yet (engine switch): forget it ((2.2) kept */
+         if (t->xp_note[i] != note) {                    /* moved, as it will sound) */
++            expr_xp_owner[t - trk][k] = expr_xp_owner[t - trk][i];
+             t->xp_note[k] = t->xp_note[i];
+             t->xp_vel[k++] = t->xp_vel[i];
+         }
+@@ -619,6 +686,7 @@
+         if (t->mono_note == note) {
+             uint32_t next = mono_pick(t);
+             if (next) {                                 /* fall back to a held note, legato */
++                expr_cur_owner = expr_mono_pick(t);
+                 mono_play(t, next, t->v[0].vel, 0, t->p[P_GLIDE] != 0);
+             } else {
+                 for (i = 0; i < nv; i++)
+@@ -640,6 +708,7 @@
+ static void trk_all_off(track_t *t)
+ {
+     uint32_t i;
++    expr_forget(t);
+     for (i = 0; i < NVOICE; i++) {
+         t->v[i].gate = 0;
+         t->v[i].stage = t->v[i].active ? 3 : 0;
+@@ -690,7 +759,7 @@
+             uint32_t n = t->xp_n;
+             t->xp_n = 0;
+             for (i = 0; i < n; i++)                     /* ((2.2) moved and sent already) */
+-                trk_sound_on(t, t->xp_note[i], t->xp_vel[i]);
++                trk_sound_on(t, t->xp_note[i], t->xp_vel[i], expr_xp_owner[t - trk][i]);
+         }
+     }
+     for (i = 0; i < 8u; i++)                            /* the engine's own values, for a later fade */
+@@ -939,6 +1008,10 @@
+                 m.amp1 = mulq15(m.amp1, 32767 - mulq15(p[P_LPOL] ? lfo : (lfo + 32768) >> 1, p[P_LD_AMP] * 258));
+             if (fade)                                   /* linear to 0 over the fade */
+                 m.amp1 = m.amp1 * (int32_t)(t->xf - 1u) / (int32_t)XF_BLOCKS;
++            if (expr_gain[ti][i]) {
++                int32_t level = 127 - expr_gain[ti][i];
++                m.amp1 = m.amp1 * level * level / 16129;
++            }
+             m.amp0 = v->env_out;
+             v->env_out = m.amp1;
+         }

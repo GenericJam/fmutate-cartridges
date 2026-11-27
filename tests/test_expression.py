@@ -10,8 +10,9 @@ import build
 import gate
 import plan
 import publish
+import expression_config
 import expression_verify
-from expression_config import identity, required_checks
+from expression_config import FELUCCA_FAMILY, identity, required_checks
 from conftest import ANDROID, android_job, beside, make_pin, sha, verify_report
 
 CAPS = {"pitch_bend": True, "note_pressure": True}
@@ -287,3 +288,51 @@ def test_build_rejects_unknown_or_incompatible_fetched_source(tmp_path, monkeypa
     result, _ = build.build("skiff", "host")
     assert result["ok"] is False and result["stage"] == "expression"
     assert "expression" not in result
+
+
+def test_felucca_family_constant_governs_voice_lifecycle_requirement_and_gate(tmp_path, monkeypatch):
+    assert {"skiff", "caravel"} <= set(FELUCCA_FAMILY)
+    assert "voice_lifecycle" not in required_checks("dinghy", {"neutral": NEUTRAL})
+    monkeypatch.setattr(expression_config, "FELUCCA_FAMILY", frozenset({*FELUCCA_FAMILY, "jiant"}))
+    monkeypatch.setattr(expression_verify, "FELUCCA_FAMILY", expression_config.FELUCCA_FAMILY)
+    assert "voice_lifecycle" in required_checks("jiant", {"neutral": NEUTRAL})
+
+    here = beside(tmp_path / "pipeline", {"jiant": make_pin("jiant")})
+    expressive = configure(here, "jiant")
+    job = enhanced_job(tmp_path / "art", "jiant", expressive)
+    change_json(job / "verify" / "jiant.json", lambda v: v["expression"]["checks"].pop("voice_lifecycle"))
+    index = publish_index(monkeypatch, here, tmp_path / "art", tmp_path / "dist", "--first")
+    assert index["firmwares"] == []
+    assert index["tried"][0]["check"] == "expression-failed"
+
+
+def test_render_dispatches_panel_key_button_encoder_and_midi_opcodes(tmp_path):
+    sent = []
+
+    class FakeEngine:
+        def __init__(self, _exe, _cart):
+            self.dir = str(tmp_path / "eng")
+            (tmp_path / "eng").mkdir()
+            self.p = type("P", (), {"stdin": None, "stdout": None, "stderr": None})()
+
+        def send(self, *msg):
+            sent.append(msg)
+
+        def drain(self, frames):
+            import numpy as np
+            return np.zeros((max(frames, expression_verify.FS // 2), 2), dtype=np.int16)
+
+        def close(self):
+            pass
+
+    expression_verify.render(FakeEngine, tmp_path / "cart.so", [
+        (100, [("key", 7, 1), ("btn", 2, 1), ("enc", 5, -100), (0x90, 60, 127)]),
+    ])
+    assert sent == [
+        (0x01, 7, 1),
+        (0x02, 2, 1),
+        (0x03, 5, 156),
+        (0x04, 0x90, 60, 127),
+    ]
+
+
